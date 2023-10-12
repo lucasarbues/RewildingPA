@@ -3,21 +3,14 @@ import boto3
 import cv2
 import numpy as np
 import io
-import pytesseract
 from PIL import Image
 from PIL.ExifTags import TAGS   
+import pickle
 
 
-s3 = boto3.client('s3')
-
-# Obtengo todas las rutas de las imagenes en S3
-paginator = s3.get_paginator('list_objects_v2')
-pages = paginator.paginate(Bucket='s3-pfa')
-objetos_s3 = []
-
-for page in pages:
-    for obj in page['Contents']:
-        objetos_s3.append(obj['Key'])
+# Leer objetos_s3
+with open('ArchivosUtiles/objetos_s3.pkl', 'rb') as archivo:
+    objetos_s3 = pickle.load(archivo)
 
 def definirRuta(fila):
     ruta = 'Muestreo ct '
@@ -198,105 +191,6 @@ def definirRuta(fila):
 
     if ruta in objetos_s3:
         return ruta
-    return ''
-
-
-# Configurar la ruta de ejecutable de Tesseract (reemplaza con la ubicación en tu sistema)
-pytesseract.pytesseract.tesseract_cmd = r'/opt/homebrew/bin/tesseract' ## HAY QUE INSTALAR TESSARACT (en la terminal: brew install tesseract)
-
-def extraerFecha(imagen_path):
-
-    s3 = boto3.client('s3')
-
-    # Descargar la imagen desde S3
-    obj = s3.get_object(Bucket='s3-pfa', Key=imagen_path)
-    imagen_bytes = obj['Body'].read()
-
-    # Cargar la imagen con OpenCV desde los bytes descargados
-    imagen = cv2.imdecode(np.frombuffer(imagen_bytes, np.uint8), -1)
-
-    imagen = cv2.resize(imagen, (1920,1080))
-
-    # Obtener dimensiones de la imagen
-    alto, ancho, _ = imagen.shape
-
-    # Definir la ROI con los ajustes aplicados
-    x = ancho // 2 - 330 # Coordenada x de la esquina superior izquierda
-    y = alto - 55  # Coordenada y de la esquina superior izquierda
-    ancho_roi = 370  # Ancho de la ROI (sin cambios)
-    alto_roi = 95  # Alto de la ROI (sin cambios)
-
-    # Recortar la ROI de la imagen
-    roi = imagen[y:y+alto_roi, x:x+ancho_roi]
-
-    # Convertir la ROI a escala de grises
-    roi_gris = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
-
-    # Aplicar OCR para extraer texto de la ROI
-    fecha_extraida = pytesseract.image_to_string(roi_gris)
-
-    # Mostrar la imagen con la ROI resaltada
-    imagen_con_roi = imagen.copy()
-    # cv2.rectangle(imagen_con_roi, (x, y), (x + ancho_roi, y + alto_roi), (0, 255, 0), 2)
-    # plt.imshow(cv2.cvtColor(imagen_con_roi, cv2.COLOR_BGR2RGB))
-    # plt.title(f"Fecha extraída de {imagen_path}: {fecha_extraida}")
-    # plt.show()
-
-    fecha_extraida = re.sub(r'[^0-9/]', '', fecha_extraida)
-
-    if(len(fecha_extraida) == 10 and fecha_extraida[2] == '/' and fecha_extraida[5] == '/'):
-        # print(fecha_extraida)
-        return fecha_extraida
-    return ''
-    
-def extraerHora(imagen_path):
-    s3 = boto3.client('s3')
-    # Descargar la imagen desde S3
-    obj = s3.get_object(Bucket='s3-pfa', Key=imagen_path)
-    imagen_bytes = obj['Body'].read()
-
-    # Cargar la imagen con OpenCV desde los bytes descargados
-    imagen = cv2.imdecode(np.frombuffer(imagen_bytes, np.uint8), -1)
-
-    imagen = cv2.resize(imagen, (1920,1080))
-
-    # Obtener dimensiones de la imagen
-    alto, ancho, _ = imagen.shape
-
-    # Definir la ROI con los ajustes aplicados
-    x = ancho // 2 + 50 # Coordenada x de la esquina superior izquierda
-    y = alto - 55  # Coordenada y de la esquina superior izquierda
-    ancho_roi = 230  # Ancho de la ROI (sin cambios)
-    alto_roi = 60  # Alto de la ROI (sin cambios)
-
-    # Recortar la ROI de la imagen
-    roi = imagen[y:y+alto_roi, x:x+ancho_roi]
-
-    # Convertir la ROI a escala de grises
-    roi_gris = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
-
-    # Aplicar OCR para extraer texto de la ROI
-    fecha_extraida = pytesseract.image_to_string(roi_gris)
-
-    # print(fecha_extraida)
-
-    # Mostrar la imagen con la ROI resaltada
-    # imagen_con_roi = imagen.copy()
-    # cv2.rectangle(imagen_con_roi, (x, y), (x + ancho_roi, y + alto_roi), (0, 255, 0), 2)
-    # plt.imshow(cv2.cvtColor(imagen_con_roi, cv2.COLOR_BGR2RGB))
-    # plt.title(f"Fecha extraída de {imagen_path}: {fecha_extraida}")
-    # plt.show()
-
-    fecha_extraida = fecha_extraida.replace('[\—=]', 'M')
-    fecha_extraida = fecha_extraida.replace('~', '')
-    fecha_extraida = fecha_extraida.replace(' ', '')
-
-    fecha_extraida = re.sub(r'[^0-9:APM]', '', fecha_extraida)
-
-    if(len(fecha_extraida) == 7 and fecha_extraida[2] == ':' and fecha_extraida[6] == 'M'):
-        # print(fecha_extraida)
-        return fecha_extraida
-    
     return ''
 
 # Función para obtener los datos de una imagen en S3
