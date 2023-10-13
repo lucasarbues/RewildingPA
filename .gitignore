@@ -1,0 +1,4 @@
+# Ignorar los archivos descargados
+ModelosAI/ArchivosUtiles/*
+ModelosAI/ModelosFinales/*
+.env
