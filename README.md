@@ -64,4 +64,4 @@ Este proyecto se encuentra bajo la licencia MIT. Consulta el archivo [LICENSE](h
 
 ## Agradecimientos
 Agradecimiento especial a la Fundación Rewilding Argentina por su colaboración y apoyo continuo.
-Reconocimientos a profesores, mentores y cualquier otra entidad o individuo que haya contribuido significativamente o influenciado en el proyecto.
+Reconocimientos a profesores y tutores de la materia Proyecto Final Analitica del Instituto Tecnologico de Buenos Aires (ITBA).
