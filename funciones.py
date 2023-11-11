@@ -3,6 +3,7 @@ import boto3
 import cv2
 import numpy as np
 import io
+import os
 import tensorflow as tf
 from PIL import Image
 from PIL.ExifTags import TAGS   
@@ -12,6 +13,18 @@ import pickle
 # Leer objetos_s3
 with open('ArchivosUtiles/objetos_s3.pkl', 'rb') as archivo:
     objetos_s3 = pickle.load(archivo)
+
+# Importo Informacion del AccessKey.
+accessKey = os.getenv("AccessKey")
+secretKey = os.getenv("SecretKey")
+# Configura tus credenciales de AWS si aún no lo has hecho
+boto3.setup_default_session(aws_access_key_id=accessKey,
+                           aws_secret_access_key=secretKey,
+                           region_name='us-east-2')
+# Nombre del bucket
+nombre_bucket_s3 = 's3-pfa'
+# Crea un cliente de S3
+s3 = boto3.client('s3')
 
 def definirRuta(fila):
     ruta = 'Muestreo ct '
