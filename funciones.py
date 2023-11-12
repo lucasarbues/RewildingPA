@@ -113,9 +113,14 @@ def definirRuta(fila):
                 else:
                     resultado = re.search(r'\((.*?)\)', fila['Nombre'])
                     ruta += 'sauce/CT S ' + str(fila['Año']) + '/' + str(fila['Camara']) + '/IMG_' + resultado.group(1).zfill(4) + '.JPG'
+            
             elif (fila['Camara'] == 'S10') or (fila['Camara'] == 'S11'):  
                 resultado = re.search(r'\((.*?)\)', fila['Nombre'])
-                ruta += 'sauce/CT S ' + str(fila['Año']) + '/' + str(fila['Camara']) + '/IMG_' + resultado.group(1).zfill(4) + '.JPG'
+                if fila['Nombre'][0] == '2':
+                    ruta += 'sauce/CT S ' + str(fila['Año']) + '/' + str(fila['Camara']) + '/2/2-S11- (' + resultado.group(1) + ').JPG'
+                else:
+                    ruta += 'sauce/CT S ' + str(fila['Año']) + '/' + str(fila['Camara']) + '/IMG_' + resultado.group(1).zfill(4) + '.JPG'
+                
             
             elif (fila['Camara'] == 'S13'):
                 ruta += 'sauce/CT S ' + str(fila['Año']) + '/' + str(fila['Camara']) + '/'
