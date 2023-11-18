@@ -9,6 +9,8 @@ from datetime import datetime
 from PIL import Image, ImageTk
 import sys
 from tqdm import tqdm
+import concurrent
+import concurrent.futures
 
 # Agrega la carpeta padre al sys.path
 current_directory = os.path.dirname(__file__)
@@ -23,9 +25,31 @@ def browse_folder():
     ruta_entry.delete(0, tk.END)
     ruta_entry.insert(0, ruta)
 
+def procesar_ruta(full_path):
+     # Obtener Sitio, Año, Camara y Archivo de la ruta
+    parts = full_path.split(os.sep)
+
+    # Encontrar el índice de inicio para las partes relevantes
+    start_index = next((i for i, part in enumerate(parts) if "Muestreo ct" in part), None)
+
+    sitio = parts[start_index]
+    año = parts[start_index + 1]
+    camara = parts[start_index + 2]
+    extra = ''
+
+    # Si hay más subdirectorios después de la cámara, los unimos
+    if len(parts) > start_index + 4:
+        extra = '/'.join(parts[start_index + 3:-1])
+
+    archivo = parts[-1]
+    return sitio, año, camara, extra, archivo
+
 def procesar_imagen(full_path, modelPresencia, modelGuanaco, confianzaAnimalInf, confianzaAnimalSup, confianzaGuanaco, confianzaCantidad):
-    # global modelPresencia, modelGuanaco, confianzaAnimalInf, confianzaAnimalSup, confianzaGuanaco, confianzaCantidad
+    global pbar
     try:
+        # Obtener la ruta de la imagen
+        sitio, año, camara, extra, archivo = procesar_ruta(full_path)
+        
         # Obtener Fecha y Hora de la imagen
         fecha, hora = get_date_time_from_image(full_path)
         fecha = pd.to_datetime(fecha, format="%Y:%m:%d").date()
@@ -49,8 +73,8 @@ def procesar_imagen(full_path, modelPresencia, modelGuanaco, confianzaAnimalInf,
             validar = ((animal_proba >= (confianzaAnimalInf)) & (animal_proba <= confianzaAnimalSup) | (guanaco_proba <= (confianzaGuanaco)))
 
         # Predecir Cantidad de Guanacos si hay un guanaco
-        cantidad = pd.NA
-        cantidad_proba = pd.NA
+        cantidad = None
+        cantidad_proba = None
         if guanaco == 1 and validar == False:
             especie = 'Guanaco'
             #  AGREGAR MEGADETECTOR
@@ -61,12 +85,12 @@ def procesar_imagen(full_path, modelPresencia, modelGuanaco, confianzaAnimalInf,
             cantidad = None
             # validar = ((animal_proba >= (confianzaAnimalInf)) & (animal_proba <= confianzaAnimalSup) | (guanaco_proba <= (confianzaGuanaco))) | (cantidad_proba <= (confianzaCantidad))
 
-        return full_path, fecha, hora, animal_proba, animal, guanaco_proba, guanaco, especie, cantidad_proba, cantidad, validar
+        return full_path, sitio, año, camara, extra, archivo, fecha, hora, animal_proba, animal, guanaco_proba, guanaco, especie, cantidad_proba, cantidad, validar, 0
 
     except Exception as e:
-        print(f'Error al procesar la imagen {full_path}: {str(e)}')
-        # pbar.write(f'Error al procesar la imagen {ruta}: {str(e)}')
-    return full_path, None, None, None, None, None, None, None, None, None, None
+        # print(f'Error al procesar la imagen {full_path}: {str(e)}')
+        pbar.write(f'Error al procesar la imagen {ruta}: {str(e)}')
+    return full_path, "error", None, None, None, None, None, None, None, None, None, None, None, None, None, None, None
 
 def run_script():
     if not ruta:
@@ -74,8 +98,6 @@ def run_script():
         return
 
     # Inicializacion
-    data = []
-    # tensor = []
     modelPresencia = load_model('ModelosAI/ModelosFinales/modeloAnimalVGG16.h5')
     modelGuanaco = load_model('ModelosAI/ModelosFinales/modeloGuanacoVGG16.h5')
     confianzaAnimalInf = 0.01
@@ -83,32 +105,78 @@ def run_script():
     confianzaGuanaco = 0.71
     confianzaCantidad = 0.69
 
+    # Obtener las rutas de las imágenes a procesar
+    paths_filtrados = []
     for root, dirs, files in os.walk(ruta):
         for file in files:
-            if file.endswith('.JPG'):
-                full_path = os.path.join(root, file)
-                parts = full_path.split(os.sep)
+            paths_filtrados.append(os.path.join(root, file))
 
-                # Encontrar el índice de inicio para las partes relevantes
-                start_index = next((i for i, part in enumerate(parts) if "Muestreo ct" in part), None)
+    # Verificar si el archivo CSV existe
+    archivo_existe = os.path.exists('InterfazUsuario/ArchivosUtiles/df.pkl')
 
-                sitio = parts[start_index]
-                año = parts[start_index + 1]
-                camara = parts[start_index + 2]
-                extra = ''
+    # Si el archivo existe, cargarlo en un DataFrame
+    if archivo_existe:
+        df = pd.read_pickle('InterfazUsuario/ArchivosUtiles/df.pkl')
+    else:
+        df = pd.DataFrame(columns=['Ruta', 'Sitio', 'Año', 'Camara', 'Extra', 'Archivo','Fecha','Hora','Animal_proba','Animal','Guanaco_proba','Guanaco','Especie','Cantidad_proba','Cantidad','Validar','Validado'])
 
-                # Si hay más subdirectorios después de la cámara, los unimos
-                if len(parts) > start_index + 4:
-                    extra = '/'.join(parts[start_index + 3:-1])
+    # Obtengo las rutas que no se han procesado.
+    # paths_filtrados que no esten en df_procesado['Ruta']
+    paths_filtrados = list(set(paths_filtrados) - set(df['Ruta']))
 
-                archivo = parts[-1]
+    # Crear una barra de progreso con tqdm
+    total_imagenes = len(paths_filtrados)
+    pbar = tqdm(total=total_imagenes, desc='Procesando imágenes', unit='img')
 
-                full_path, fecha, hora, animal_proba, animal, guanaco_proba, guanaco, especie, cantidad_proba, cantidad, validar = procesar_imagen(full_path, modelPresencia, modelGuanaco, confianzaAnimalInf, confianzaAnimalSup, confianzaGuanaco, confianzaCantidad)
+    # Número de procesos o subprocesos concurrentes que deseas ejecutar
+    num_procesos_concurrentes = os.cpu_count()  # Puedes ajustar este valor
 
-                # tensor.append([full_path, tensor]) # Vale la pena guardar el tensor?
-                data.append([full_path, sitio, año, camara, extra, archivo, fecha, hora, animal_proba, animal, guanaco_proba, guanaco, especie, cantidad_proba, cantidad, validar, 0])
+    # Cambio en la lógica de ejecución para almacenar resultados en una lista
+    resultados = []
+    imagenes_fallidas = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=num_procesos_concurrentes) as executor:
+        futures = [executor.submit(procesar_imagen, path, modelPresencia, modelGuanaco, confianzaAnimalInf, confianzaAnimalSup, confianzaGuanaco, confianzaCantidad) for path in paths_filtrados]
+        for future in concurrent.futures.as_completed(futures):
+            resultado = future.result()
+            if "error" in resultado:
+                imagenes_fallidas.append(resultado[0])
+            else:
+                resultados.append(resultado)
+                pbar.update(1)
 
-    df = pd.DataFrame(data, columns=['Ruta', 'Sitio', 'Año', 'Camara', 'Extra', 'Archivo','Fecha','Hora','Animal_proba','Animal','Guanaco_proba','Guanaco','Especie','Cantidad_proba','Cantidad','Validar','Validado'])
+            # Cada 1000 imágenes, guarda el DataFrame
+            if len(resultados) > 1000:
+                df_temporal = pd.DataFrame(resultados, columns=['Ruta', 'Sitio', 'Año', 'Camara', 'Extra', 'Archivo','Fecha','Hora','Animal_proba','Animal','Guanaco_proba','Guanaco','Especie','Cantidad_proba','Cantidad','Validar','Validado'])
+                df = pd.concat([df, df_temporal], ignore_index=True)
+                df.to_pickle('InterfazUsuario/ArchivosUtiles/df.pkl')
+                pbar.write(f'Se guardaron los cambios después de procesar {len(df)} imágenes.')
+                resultados = []
+
+    # Reintentar procesar las imágenes que fallaron
+    if imagenes_fallidas:
+        pbar.reset(total=len(imagenes_fallidas))
+        pbar.set_description("Reintentando imágenes fallidas")
+        with concurrent.futures.ThreadPoolExecutor(max_workers=num_procesos_concurrentes) as executor:
+            futures = {executor.submit(procesar_imagen, path, ...): path for path in imagenes_fallidas}  # Tus argumentos aquí
+            for future in concurrent.futures.as_completed(futures):
+                resultado = future.result()
+                if resultado[1] == "error":
+                    resultados.append(resultado)
+                else:
+                    sitio, año, camara, extra, archivo = procesar_ruta(resultado[0])
+                    resultados.append([resultado[0], sitio, año, camara, extra, archivo, None, None, None, None, None, None, None, None, None, None, 0])
+                pbar.update(1)
+
+    # Al final del procesamiento, guarda cualquier imagen restante
+    if resultados:
+        df_temporal = pd.DataFrame(resultados, columns=['Ruta', 'Sitio', 'Año', 'Camara', 'Extra', 'Archivo','Fecha','Hora','Animal_proba','Animal','Guanaco_proba','Guanaco','Especie','Cantidad_proba','Cantidad','Validar','Validado'])
+        df = pd.concat([df, df_temporal], ignore_index=True)
+        df.to_pickle('InterfazUsuario/ArchivosUtiles/df.pkl')
+        pbar.write(f'Se guardaron los cambios después de procesar {len(df)} imágenes.')
+
+    # Cerrar la barra de progreso
+    pbar.close()
+
     #  Ordenar por sitio, año, cámara, fecha y hora
     df = df.sort_values(by=['Sitio', 'Año', 'Camara', 'Fecha', 'Hora'])
 
