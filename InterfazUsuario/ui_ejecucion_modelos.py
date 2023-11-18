@@ -51,7 +51,7 @@ def procesar_imagen(ruta):
         # Predecir Cantidad de Guanacos si hay un guanaco
         cantidad = None
         cantidad_proba = None
-        if guanaco == 1:
+        if guanaco == 1 and validar == False:
             especie = 'Guanaco'
             #  AGREGAR MEGADETECTOR
                 # Para esa imagen --> group de detecciones "cant_pred" y "mean_confidence"
@@ -60,8 +60,8 @@ def procesar_imagen(ruta):
             cantidad_proba = None
             cantidad = None
 
-        return ruta, fecha, hora, tensor, animal_proba, animal, guanaco_proba, guanaco, cantidad_proba, cantidad, validar
-            
+        return ruta, fecha, hora, tensor, animal_proba, animal, guanaco_proba, guanaco, especie, cantidad_proba, cantidad, validar
+
     except Exception as e:
         pbar.write(f'Error al procesar la imagen {ruta}: {str(e)}')
     return ruta, None, None
@@ -70,7 +70,7 @@ def run_script():
     if not ruta:
         messagebox.showerror("Error", "Por favor, selecciona una ruta válida.")
         return
-    
+
     # Inicializacion
     data = []
     tensor = []
@@ -101,10 +101,10 @@ def run_script():
 
                 archivo = parts[-1]
 
-                ruta, fecha, hora, tensor, animal_proba, animal, guanaco_proba, guanaco, cantidad_proba, cantidad, validar = procesar_imagen(full_path)
+                ruta, fecha, hora, tensor, animal_proba, animal, guanaco_proba, guanaco, especie, cantidad_proba, cantidad, validar = procesar_imagen(full_path)
 
                 tensor.append([ruta, tensor]) # Vale la pena guardar el tensor?
-                data.append([full_path, sitio, año, camara, extra, archivo, fecha, hora, animal_proba, animal, guanaco_proba, guanaco, cantidad_proba, cantidad, validar, 0])
+                data.append([full_path, sitio, año, camara, extra, archivo, fecha, hora, animal_proba, animal, guanaco_proba, guanaco, especie, cantidad_proba, cantidad, validar, 0])
 
     df = pd.DataFrame(data, columns=['Ruta', 'Sitio', 'Año', 'Camara', 'Extra', 'Archivo','Fecha','Hora','Animal_proba','Animal','Guanaco_proba','Guanaco','Especie','Cantidad','Validar','Validado'])
 
