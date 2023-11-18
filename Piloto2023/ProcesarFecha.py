@@ -83,7 +83,6 @@ def manejar_interrupcion(signal, frame):
 # Configurar la señal de interrupción (Ctrl + C) para guardar los datos antes de salir
 signal.signal(signal.SIGINT, manejar_interrupcion)
 
-
 # Crear una barra de progreso con tqdm
 total_imagenes = len(paths_filtrados)
 pbar = tqdm(total=total_imagenes, desc='Procesando imágenes', unit='img')
