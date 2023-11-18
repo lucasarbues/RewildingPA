@@ -23,19 +23,19 @@ def browse_folder():
     ruta_entry.delete(0, tk.END)
     ruta_entry.insert(0, ruta)
 
-def procesar_imagen(ruta):
-    global modelPresencia, modelGuanaco, confianzaAnimalInf, confianzaAnimalSup, confianzaGuanaco, confianzaCantidad
+def procesar_imagen(full_path, modelPresencia, modelGuanaco, confianzaAnimalInf, confianzaAnimalSup, confianzaGuanaco, confianzaCantidad):
+    # global modelPresencia, modelGuanaco, confianzaAnimalInf, confianzaAnimalSup, confianzaGuanaco, confianzaCantidad
     try:
         # Obtener Fecha y Hora de la imagen
-        fecha, hora = get_date_time_from_image(ruta)
+        fecha, hora = get_date_time_from_image(full_path)
         fecha = pd.to_datetime(fecha, format="%Y:%m:%d").date()
         hora = pd.to_datetime(hora, format="%H:%M:%S").time()
 
         # Obtener Tensor de la imagen
-        tensor = load_and_convert_image(ruta)
+        tensor = load_and_convert_image(full_path)
 
         # Predecir Presencia de Animal
-        animal_proba = modelPresencia.predict(tensor)
+        animal_proba = modelPresencia.predict(tensor)[0][0]
         animal = (animal_proba > 0.5).astype(int)
         validar = ((animal_proba >= (confianzaAnimalInf)) & (animal_proba <= confianzaAnimalSup))
 
@@ -44,9 +44,9 @@ def procesar_imagen(ruta):
         guanaco = None
         especie = None
         if animal == 1 and validar == False:
-            guanaco_proba = modelGuanaco.predict(tensor)
+            guanaco_proba = modelGuanaco.predict(tensor)[0][0]
             guanaco = (guanaco_proba > 0.5).astype(int)
-            validar = (guanaco_proba <= (confianzaGuanaco))
+            validar = ((animal_proba >= (confianzaAnimalInf)) & (animal_proba <= confianzaAnimalSup) | (guanaco_proba <= (confianzaGuanaco)))
 
         # Predecir Cantidad de Guanacos si hay un guanaco
         cantidad = None
@@ -59,12 +59,14 @@ def procesar_imagen(ruta):
                 # cantidad = (cant_pred == 1).astype(int)
             cantidad_proba = None
             cantidad = None
+            # validar = ((animal_proba >= (confianzaAnimalInf)) & (animal_proba <= confianzaAnimalSup) | (guanaco_proba <= (confianzaGuanaco))) | (cantidad_proba <= (confianzaCantidad))
 
-        return ruta, fecha, hora, tensor, animal_proba, animal, guanaco_proba, guanaco, especie, cantidad_proba, cantidad, validar
+        return full_path, fecha, hora, animal_proba, animal, guanaco_proba, guanaco, especie, cantidad_proba, cantidad, validar
 
     except Exception as e:
-        pbar.write(f'Error al procesar la imagen {ruta}: {str(e)}')
-    return ruta, None, None
+        print(f'Error al procesar la imagen {full_path}: {str(e)}')
+        # pbar.write(f'Error al procesar la imagen {ruta}: {str(e)}')
+    return full_path, None, None, None, None, None, None, None, None, None, None
 
 def run_script():
     if not ruta:
@@ -73,7 +75,7 @@ def run_script():
 
     # Inicializacion
     data = []
-    tensor = []
+    # tensor = []
     modelPresencia = load_model('ModelosAI/ModelosFinales/modeloAnimalVGG16.h5')
     modelGuanaco = load_model('ModelosAI/ModelosFinales/modeloGuanacoVGG16.h5')
     confianzaAnimalInf = 0.01
@@ -101,12 +103,16 @@ def run_script():
 
                 archivo = parts[-1]
 
-                ruta, fecha, hora, tensor, animal_proba, animal, guanaco_proba, guanaco, especie, cantidad_proba, cantidad, validar = procesar_imagen(full_path)
+                full_path, fecha, hora, animal_proba, animal, guanaco_proba, guanaco, especie, cantidad_proba, cantidad, validar = procesar_imagen(full_path, modelPresencia, modelGuanaco, confianzaAnimalInf, confianzaAnimalSup, confianzaGuanaco, confianzaCantidad)
 
-                tensor.append([ruta, tensor]) # Vale la pena guardar el tensor?
+                # tensor.append([full_path, tensor]) # Vale la pena guardar el tensor?
                 data.append([full_path, sitio, año, camara, extra, archivo, fecha, hora, animal_proba, animal, guanaco_proba, guanaco, especie, cantidad_proba, cantidad, validar, 0])
 
-    df = pd.DataFrame(data, columns=['Ruta', 'Sitio', 'Año', 'Camara', 'Extra', 'Archivo','Fecha','Hora','Animal_proba','Animal','Guanaco_proba','Guanaco','Especie','Cantidad','Validar','Validado'])
+    df = pd.DataFrame(data, columns=['Ruta', 'Sitio', 'Año', 'Camara', 'Extra', 'Archivo','Fecha','Hora','Animal_proba','Animal','Guanaco_proba','Guanaco','Especie','Cantidad_proba','Cantidad','Validar','Validado'])
+    #  Ordenar por sitio, año, cámara, fecha y hora
+    df = df.sort_values(by=['Sitio', 'Año', 'Camara', 'Fecha', 'Hora'])
+
+
 
     # df['Fecha'], df['Hora'] = zip(*df['Ruta'].apply(get_date_time_from_image))
     # df['Fecha'] = pd.to_datetime(df['Fecha'], format="%Y:%m:%d")
