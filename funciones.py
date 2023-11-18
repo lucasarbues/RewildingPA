@@ -380,20 +380,20 @@ class YOLOV5Base:
 
         # Predicción del modelo
         preds = self.model(img.unsqueeze(0).to(self.device))[0]
-        
+
         # Aplicar non-maximum suppression para filtrar las predicciones
         preds = non_max_suppression(preds, conf_thres, iou_thres, max_det=300)
 
         # Verifica si hay detecciones después de NMS
         if not preds or len(preds[0]) == 0:
             return 0, 0
-        
+
         # Procesar detecciones
         preds = preds[0]
         # Asegurarse de que las dimensiones de la imagen son correctas para scale_coords
         img_shape = img.shape if len(img.shape) == 3 else img[0].shape
         preds[:, :4] = scale_coords(img_shape, preds[:, :4], img.shape).round()
-        
+
         return self.results_generation(preds.cpu().numpy())
 
 
