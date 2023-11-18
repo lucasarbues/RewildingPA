@@ -285,3 +285,115 @@ def get_date_time_from_image(path):
     except Exception as e:
         print(f"Error processing image {path}: {e}")
     return None, None
+
+
+import numpy as np
+from tqdm import tqdm
+import supervision as sv
+import torch
+from torch.hub import load_state_dict_from_url
+from yolov5.utils.general import non_max_suppression, scale_coords
+
+class YOLOV5Base:
+    """
+    Base detector class for YOLO V5. This class provides utility methods for
+    loading the model, generating results, and performing single and batch image detections.
+    """
+
+    # Placeholder class-level attributes to be defined in derived classes
+    IMAGE_SIZE = None
+    STRIDE = None
+    CLASS_NAMES = None
+    TRANSFORM = None
+
+    def __init__(self, weights=None, device="cpu", url=None):
+        """
+        Initialize the YOLO V5 detector.
+
+        Args:
+            weights (str, optional): 
+                Path to the model weights. Defaults to None.
+            device (str, optional): 
+                Device for model inference. Defaults to "cpu".
+            url (str, optional): 
+                URL to fetch the model weights. Defaults to None.
+        """
+        self.model = None
+        self.device = device
+        self._load_model(weights, self.device, url)
+        self.model.to(self.device)
+
+    def _load_model(self, weights=None, device="cpu", url=None):
+        """
+        Load the YOLO V5 model weights.
+
+        Args:
+            weights (str, optional): 
+                Path to the model weights. Defaults to None.
+            device (str, optional): 
+                Device for model inference. Defaults to "cpu".
+            url (str, optional): 
+                URL to fetch the model weights. Defaults to None.
+        Raises:
+            Exception: If weights are not provided.
+        """
+        if weights:
+            checkpoint = torch.load(weights, map_location=torch.device(device))
+        elif url:
+            checkpoint = load_state_dict_from_url(url, map_location=torch.device(self.device))
+        else:
+            raise Exception("Need weights for inference.")
+        self.model = checkpoint["model"].float().fuse().eval()  # Convert to FP32 model
+
+
+    def results_generation(self, preds):
+        """
+        Generate modified results for detection.
+
+        Args:
+            preds (numpy.ndarray): Model predictions.
+
+        Returns:
+            dict: Dictionary containing the count of detections and the average confidence.
+        """
+        num_detections = preds.shape[0]
+        if num_detections == 0:
+            return 0, 0
+
+        avg_confidence = np.mean(preds[:, 4])
+        return num_detections, avg_confidence
+
+    def single_image_detection(self, img, conf_thres=0.2, iou_thres = 0.45):
+        """
+        Perform detection on a single image with modified results.
+
+        Args:
+            img (torch.Tensor): Input image tensor.
+            conf_thres (float, optional): Confidence threshold for predictions.
+
+        Returns:
+            dict: Modified detection results.
+        """
+        # Asegúrate de que img no es None y tiene la forma esperada
+        if img is None or len(img.shape) != 3:
+            return 0, 0
+
+        # Predicción del modelo
+        preds = self.model(img.unsqueeze(0).to(self.device))[0]
+        
+        # Aplicar non-maximum suppression para filtrar las predicciones
+        preds = non_max_suppression(preds, conf_thres, iou_thres, max_det=300)
+
+        # Verifica si hay detecciones después de NMS
+        if not preds or len(preds[0]) == 0:
+            return 0, 0
+        
+        # Procesar detecciones
+        preds = preds[0]
+        # Asegurarse de que las dimensiones de la imagen son correctas para scale_coords
+        img_shape = img.shape if len(img.shape) == 3 else img[0].shape
+        preds[:, :4] = scale_coords(img_shape, preds[:, :4], img.shape).round()
+        
+        return self.results_generation(preds.cpu().numpy())
+
+
