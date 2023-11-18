@@ -54,6 +54,9 @@ def procesar_imagen(ruta):
         if guanaco == 1:
             especie = 'Guanaco'
             #  AGREGAR MEGADETECTOR
+                # Para esa imagen --> group de detecciones "cant_pred" y "mean_confidence"
+                # cantidad_proba = (cant_pred == 1) * mean_confidence + (1 - (cant_pred' == 1)) * (1 - mean_confidence)
+                # cantidad = (cant_pred == 1).astype(int)
             cantidad_proba = None
             cantidad = None
 
