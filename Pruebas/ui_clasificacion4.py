@@ -35,15 +35,13 @@ def run_script():
                 full_path = os.path.join(root, file)
                 parts = full_path.split(os.sep)
 
-                sitio = parts[-4] if len(parts) > 4 else None
-                año = parts[-3] if len(parts) > 3 else None
-                camara = parts[-2] if len(parts) > 2 else None
-                archivo = file
-                extra = None
-
-                if len(parts) > 5:
-                    camara = parts[-3]
-                    extra = parts[-2]
+                # Obtengo los datos de la imagen
+                sitio = parts[0]
+                año = parts[1]
+                camara = parts[2]
+                if len(parts) > 4:
+                    extra = '/'.join(parts[3:-1])
+                archivo = parts[-1]
 
                 data.append([full_path, sitio, año, camara, extra, archivo])
 
