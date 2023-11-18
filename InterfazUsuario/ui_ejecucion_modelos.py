@@ -11,13 +11,17 @@ import sys
 from tqdm import tqdm
 import concurrent
 import concurrent.futures
+import torch
+import torchvision.transforms as transforms
+from torchvision.transforms import Resize
+import numpy as np
 
 # Agrega la carpeta padre al sys.path
 current_directory = os.path.dirname(__file__)
 parent_directory = os.path.dirname(current_directory)
 sys.path.append(parent_directory)
 
-from funciones import load_and_convert_image, get_date_time_from_image
+from funciones import load_and_convert_image, get_date_time_from_image, YOLOV5Base
 
 def browse_folder():
     global ruta
@@ -44,12 +48,31 @@ def procesar_ruta(full_path):
     archivo = parts[-1]
     return sitio, año, camara, extra, archivo
 
-def procesar_imagen(full_path, modelPresencia, modelGuanaco, confianzaAnimalInf, confianzaAnimalSup, confianzaGuanaco, confianzaCantidad):
-    global pbar
+def Megadetector(image_path, model):
+    try:
+        # Leer y transformar la imagen
+        image = Image.open(image_path)
+        transform = transforms.Compose([
+            Resize((640, 640)),
+            transforms.ToTensor()
+        ])
+        image = transform(image)
+        num_detections, average_confidence = model.single_image_detection(img=image, conf_thres=0.4)
+
+        return average_confidence, num_detections
+    except Exception as e:
+        print(f'Megadetector Falla: {image_path}: {str(e)}')
+        return None, None
+
+    # Calcular la media de la confianza
+    average_confidence = confidences[confidences > 0.5].min().item() if num_detections > 0 else 0
+    return average_confidence, num_detections
+
+def procesar_imagen(full_path, modelPresencia, modelGuanaco, modelMegadetector, confianzaAnimalInf, confianzaAnimalSup, confianzaGuanaco, confianzaCantidad, pbar):
     try:
         # Obtener la ruta de la imagen
         sitio, año, camara, extra, archivo = procesar_ruta(full_path)
-        
+
         # Obtener Fecha y Hora de la imagen
         fecha, hora = get_date_time_from_image(full_path)
         fecha = pd.to_datetime(fecha, format="%Y:%m:%d").date()
@@ -60,7 +83,7 @@ def procesar_imagen(full_path, modelPresencia, modelGuanaco, confianzaAnimalInf,
 
         # Predecir Presencia de Animal
         animal_proba = modelPresencia.predict(tensor, verbose=0)[0][0]
-        animal = (animal_proba > 0.5).astype(int)
+        animal = int(animal_proba > 0.5)
         validar = ((animal_proba >= (confianzaAnimalInf)) & (animal_proba <= confianzaAnimalSup))
 
         # Predecir Presencia de Guanaco si hay un animal
@@ -69,7 +92,7 @@ def procesar_imagen(full_path, modelPresencia, modelGuanaco, confianzaAnimalInf,
         especie = None
         if animal == 1 and validar == False:
             guanaco_proba = modelGuanaco.predict(tensor, verbose=0)[0][0]
-            guanaco = (guanaco_proba > 0.5).astype(int)
+            guanaco = int(guanaco_proba > 0.5) if guanaco_proba is not None else None
             validar = ((animal_proba >= (confianzaAnimalInf)) & (animal_proba <= confianzaAnimalSup) | (guanaco_proba <= (confianzaGuanaco)))
 
         # Predecir Cantidad de Guanacos si hay un guanaco
@@ -77,19 +100,15 @@ def procesar_imagen(full_path, modelPresencia, modelGuanaco, confianzaAnimalInf,
         cantidad_proba = None
         if guanaco == 1 and validar == False:
             especie = 'Guanaco'
-            #  AGREGAR MEGADETECTOR
-                # Para esa imagen --> group de detecciones "cant_pred" y "mean_confidence"
-                # cantidad_proba = (cant_pred == 1) * mean_confidence + (1 - (cant_pred' == 1)) * (1 - mean_confidence)
-                # cantidad = (cant_pred == 1).astype(int)
-            cantidad_proba = None
-            cantidad = None
-            # validar = ((animal_proba >= (confianzaAnimalInf)) & (animal_proba <= confianzaAnimalSup) | (guanaco_proba <= (confianzaGuanaco))) | (cantidad_proba <= (confianzaCantidad))
+            mean_confidence, cant_pred = Megadetector(full_path, modelMegadetector)
+            cantidad_proba = (cant_pred == 1) * mean_confidence + (1 - (cant_pred == 1)) * (1 - mean_confidence)
+            cantidad = int(cant_pred == 1) if cant_pred is not None else None
+            validar = ((animal_proba >= (confianzaAnimalInf)) & (animal_proba <= confianzaAnimalSup) | (guanaco_proba <= (confianzaGuanaco))) | (cantidad_proba <= (confianzaCantidad))
 
         return full_path, sitio, año, camara, extra, archivo, fecha, hora, animal_proba, animal, guanaco_proba, guanaco, especie, cantidad_proba, cantidad, validar, 0
 
     except Exception as e:
-        # print(f'Error al procesar la imagen {full_path}: {str(e)}')
-        pbar.write(f'Error al procesar la imagen {ruta}: {str(e)}')
+        pbar.write(f'Error al procesar la imagen {full_path}: {str(e)}')
     return full_path, "error", None, None, None, None, None, None, None, None, None, None, None, None, None, None, None
 
 def run_script():
@@ -100,6 +119,9 @@ def run_script():
     # Inicializacion
     modelPresencia = load_model('ModelosAI/ModelosFinales/modeloAnimalVGG16.h5')
     modelGuanaco = load_model('ModelosAI/ModelosFinales/modeloGuanacoVGG16.h5')
+    modelMegadetector = YOLOV5Base(weights='ModelosAI/ModelosFinales/modeloMegadetector.pt', device='cpu')
+
+
     confianzaAnimalInf = 0.01
     confianzaAnimalSup = 0.96
     confianzaGuanaco = 0.71
@@ -135,7 +157,7 @@ def run_script():
     resultados = []
     imagenes_fallidas = []
     with concurrent.futures.ThreadPoolExecutor(max_workers=num_procesos_concurrentes) as executor:
-        futures = [executor.submit(procesar_imagen, path, modelPresencia, modelGuanaco, confianzaAnimalInf, confianzaAnimalSup, confianzaGuanaco, confianzaCantidad) for path in paths_filtrados]
+        futures = [executor.submit(procesar_imagen, path, modelPresencia, modelGuanaco, modelMegadetector, confianzaAnimalInf, confianzaAnimalSup, confianzaGuanaco, confianzaCantidad, pbar) for path in paths_filtrados]
         for future in concurrent.futures.as_completed(futures):
             resultado = future.result()
             if "error" in resultado:
@@ -157,7 +179,7 @@ def run_script():
         pbar.reset(total=len(imagenes_fallidas))
         pbar.set_description("Reintentando imágenes fallidas")
         with concurrent.futures.ThreadPoolExecutor(max_workers=num_procesos_concurrentes) as executor:
-            futures = {executor.submit(procesar_imagen, path, ...): path for path in imagenes_fallidas}  # Tus argumentos aquí
+            futures = {executor.submit(procesar_imagen, path, modelPresencia, modelGuanaco, modelMegadetector, confianzaAnimalInf, confianzaAnimalSup, confianzaGuanaco, confianzaCantidad, pbar): path for path in imagenes_fallidas}  # Tus argumentos aquí
             for future in concurrent.futures.as_completed(futures):
                 resultado = future.result()
                 if resultado[1] == "error":
