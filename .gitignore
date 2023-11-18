@@ -2,3 +2,5 @@
 ModelosAI/ArchivosUtiles/*
 ModelosAI/ModelosFinales/*
 .env
+__pycache__
+.vscode

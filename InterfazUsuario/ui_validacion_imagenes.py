@@ -84,7 +84,7 @@ class ValidacionImagenes:
         self.espacio_blanco5.grid(row=16,column=0,columnspan=2)
 
 
-        imagen_logo = Image.open("../Interfaz de Usuario/ArchivosUtiles/logo_rewilding.png")
+        imagen_logo = Image.open("../InterfazUsuario/ArchivosUtiles/logo_rewilding.png")
         imagen_logo = imagen_logo.resize((180, 60))
         imagen_logo = ImageTk.PhotoImage(imagen_logo)
 
