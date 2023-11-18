@@ -250,6 +250,16 @@ def extraerFechaHora(image_key):
             return '',''
     return '',''
 
+# def load_and_convert_image(img_path):
+#     # Leer y decodificar la imagen
+#     img = tf.io.read_file(img_path)
+#     img = tf.image.decode_image(img, channels=3, expand_animations=False)  # asumimos imágenes en color (3 canales)
+    
+#     # Cambiar el tamaño de la imagen a 150x150
+#     img_resized = tf.image.resize(img, [150, 150])
+    
+#     return tf.convert_to_tensor(img_resized)
+
 def load_and_convert_image(img_path):
     # Leer y decodificar la imagen
     img = tf.io.read_file(img_path)
@@ -258,7 +268,10 @@ def load_and_convert_image(img_path):
     # Cambiar el tamaño de la imagen a 150x150
     img_resized = tf.image.resize(img, [150, 150])
     
-    return tf.convert_to_tensor(img_resized)
+    # Expandir las dimensiones para simular un batch de una sola imagen
+    img_batch = tf.expand_dims(img_resized, axis=0)
+    
+    return img_batch
 
 def get_date_time_from_image(path):
     """Extrae la fecha y hora de la metadata de una imagen."""
