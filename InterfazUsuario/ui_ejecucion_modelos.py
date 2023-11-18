@@ -35,7 +35,7 @@ def procesar_imagen(full_path, modelPresencia, modelGuanaco, confianzaAnimalInf,
         tensor = load_and_convert_image(full_path)
 
         # Predecir Presencia de Animal
-        animal_proba = modelPresencia.predict(tensor)[0][0]
+        animal_proba = modelPresencia.predict(tensor, verbose=0)[0][0]
         animal = (animal_proba > 0.5).astype(int)
         validar = ((animal_proba >= (confianzaAnimalInf)) & (animal_proba <= confianzaAnimalSup))
 
@@ -44,13 +44,13 @@ def procesar_imagen(full_path, modelPresencia, modelGuanaco, confianzaAnimalInf,
         guanaco = None
         especie = None
         if animal == 1 and validar == False:
-            guanaco_proba = modelGuanaco.predict(tensor)[0][0]
+            guanaco_proba = modelGuanaco.predict(tensor, verbose=0)[0][0]
             guanaco = (guanaco_proba > 0.5).astype(int)
             validar = ((animal_proba >= (confianzaAnimalInf)) & (animal_proba <= confianzaAnimalSup) | (guanaco_proba <= (confianzaGuanaco)))
 
         # Predecir Cantidad de Guanacos si hay un guanaco
-        cantidad = None
-        cantidad_proba = None
+        cantidad = pd.NA
+        cantidad_proba = pd.NA
         if guanaco == 1 and validar == False:
             especie = 'Guanaco'
             #  AGREGAR MEGADETECTOR
@@ -95,7 +95,7 @@ def run_script():
                 sitio = parts[start_index]
                 año = parts[start_index + 1]
                 camara = parts[start_index + 2]
-                extra = None
+                extra = ''
 
                 # Si hay más subdirectorios después de la cámara, los unimos
                 if len(parts) > start_index + 4:
@@ -111,42 +111,6 @@ def run_script():
     df = pd.DataFrame(data, columns=['Ruta', 'Sitio', 'Año', 'Camara', 'Extra', 'Archivo','Fecha','Hora','Animal_proba','Animal','Guanaco_proba','Guanaco','Especie','Cantidad_proba','Cantidad','Validar','Validado'])
     #  Ordenar por sitio, año, cámara, fecha y hora
     df = df.sort_values(by=['Sitio', 'Año', 'Camara', 'Fecha', 'Hora'])
-
-
-
-    # df['Fecha'], df['Hora'] = zip(*df['Ruta'].apply(get_date_time_from_image))
-    # df['Fecha'] = pd.to_datetime(df['Fecha'], format="%Y:%m:%d")
-    # df['Hora'] = pd.to_datetime(df['Hora'], format="%H:%M:%S").dt.strftime("%H:%M:%S")
-
-    # image_tensors = [load_and_convert_image(img_path) for img_path in df['Ruta']]
-    # tensor = tf.stack(image_tensors)
-
-    # modelPresencia = load_model('ModelosAI/ModelosFinales/modeloAnimalVGG16.h5')
-
-    # df['Animal_proba'] = modelPresencia.predict(tensor)
-
-    # df['Animal'] = (df['Animal_proba'] > 0.5).astype(int)
-
-    # indices = [i for i, x in enumerate(df['Animal'].values) if x == 1]
-
-    # tensorAnimal = tf.gather(tensor, indices)
-
-    # modelGuanaco = load_model('ModelosAI/ModelosFinales/modeloGuanacoVGG16.h5')
-
-    # df.loc[df['Animal']==1, 'Guanaco_proba'] = modelGuanaco.predict(tensorAnimal)
-
-    # df.loc[df['Animal']==1,'Guanaco'] = (df.loc[df['Animal']==1,'Guanaco_proba'] > 0.5).astype(int)
-
-    # confianzaAnimal = 0.99
-    # confianzaGuanaco = 0.90
-
-    # df['Validar'] = ((df['Animal_proba'] >= (1-confianzaAnimal)) & (df['Animal_proba'] <= confianzaAnimal)) | (df['Guanaco_proba'] <= (confianzaGuanaco))
-    # df['Validado'] = 0
-    # df['Especie'] = pd.NA
-    # df['Cantidad']= pd.NA
-    # df.loc[df['Validar'] == False, 'Especie'] = 'Guanaco'
-    # df.loc[df['Validar'] == False, 'Cantidad'] = 1
-    # df.loc[df['Validar'] == False, 'Validado'] = 1
 
     hoy  = datetime.now().date()
     default_filename = "procesado_"+str(hoy)+".csv"
