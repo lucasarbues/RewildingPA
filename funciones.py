@@ -6,7 +6,7 @@ import io
 import os
 import tensorflow as tf
 from PIL import Image
-from PIL.ExifTags import TAGS   
+from PIL.ExifTags import TAGS
 import pickle
 
 
@@ -271,3 +271,4 @@ def get_date_time_from_image(path):
                 return date, time
     except Exception as e:
         print(f"Error processing image {path}: {e}")
+    return None, None
