@@ -1,20 +1,26 @@
 import os
+
+# Suprimir advertencias de Intel MKL y NNPACK
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  
+os.environ['MKL_THREADING_LAYER'] = 'GNU'
+
 import pandas as pd
 import tkinter as tk
-from tkinter import filedialog,simpledialog,messagebox
-from tkinter import messagebox
+from tkinter import filedialog, simpledialog, messagebox, messagebox, ttk
+from tkinter.font import Font
 from tensorflow.keras.models import load_model
 import tensorflow as tf
 from datetime import datetime
 from PIL import Image, ImageTk
 import sys
-from tqdm import tqdm
+# from tqdm import tqdm
 import concurrent
 import concurrent.futures
 import torch
 import torchvision.transforms as transforms
 from torchvision.transforms import Resize
 import numpy as np
+
 
 # Agrega la carpeta padre al sys.path
 current_directory = os.path.dirname(__file__)
@@ -60,15 +66,12 @@ def Megadetector(image_path, model):
         num_detections, average_confidence = model.single_image_detection(img=image, conf_thres=0.4)
 
         return average_confidence, num_detections
+
     except Exception as e:
         print(f'Megadetector Falla: {image_path}: {str(e)}')
         return None, None
 
-    # Calcular la media de la confianza
-    average_confidence = confidences[confidences > 0.5].min().item() if num_detections > 0 else 0
-    return average_confidence, num_detections
-
-def procesar_imagen(full_path, modelPresencia, modelGuanaco, modelMegadetector, confianzaAnimalInf, confianzaAnimalSup, confianzaGuanaco, confianzaCantidad, pbar):
+def procesar_imagen(full_path, modelPresencia, modelGuanaco, modelMegadetector, confianzaAnimalInf, confianzaAnimalSup, confianzaGuanaco, confianzaCantidad):
     try:
         # Obtener la ruta de la imagen
         sitio, año, camara, extra, archivo = procesar_ruta(full_path)
@@ -108,8 +111,15 @@ def procesar_imagen(full_path, modelPresencia, modelGuanaco, modelMegadetector, 
         return full_path, sitio, año, camara, extra, archivo, fecha, hora, animal_proba, animal, guanaco_proba, guanaco, especie, cantidad_proba, cantidad, validar, 0
 
     except Exception as e:
-        pbar.write(f'Error al procesar la imagen {full_path}: {str(e)}')
+        print(f'Error al procesar la imagen {full_path}: {str(e)}')
     return full_path, "error", None, None, None, None, None, None, None, None, None, None, None, None, None, None, None
+
+def update_progress_bar(current, total):
+    """Actualiza la barra de progreso en la interfaz de Tkinter."""
+    progress = 100 * (current / total)
+    progress_var.set(progress)
+    progress_label.config(text=f"{current}/{total} ({progress_var.get():.2f}%)")
+    root.update_idletasks()
 
 def run_script():
     if not ruta:
@@ -148,7 +158,6 @@ def run_script():
 
     # Crear una barra de progreso con tqdm
     total_imagenes = len(paths_filtrados)
-    pbar = tqdm(total=total_imagenes, desc='Procesando imágenes', unit='img')
 
     # Número de procesos o subprocesos concurrentes que deseas ejecutar
     num_procesos_concurrentes = os.cpu_count()  # Puedes ajustar este valor
@@ -157,47 +166,44 @@ def run_script():
     resultados = []
     imagenes_fallidas = []
     with concurrent.futures.ThreadPoolExecutor(max_workers=num_procesos_concurrentes) as executor:
-        futures = [executor.submit(procesar_imagen, path, modelPresencia, modelGuanaco, modelMegadetector, confianzaAnimalInf, confianzaAnimalSup, confianzaGuanaco, confianzaCantidad, pbar) for path in paths_filtrados]
-        for future in concurrent.futures.as_completed(futures):
+        futures = [executor.submit(procesar_imagen, path, modelPresencia, modelGuanaco, modelMegadetector, confianzaAnimalInf, confianzaAnimalSup, confianzaGuanaco, confianzaCantidad) for path in paths_filtrados]
+        for i, future in enumerate(concurrent.futures.as_completed(futures)):
             resultado = future.result()
             if "error" in resultado:
                 imagenes_fallidas.append(resultado[0])
             else:
                 resultados.append(resultado)
-                pbar.update(1)
+            update_progress_bar(i+1, total_imagenes)
 
             # Cada 1000 imágenes, guarda el DataFrame
             if len(resultados) > 1000:
                 df_temporal = pd.DataFrame(resultados, columns=['Ruta', 'Sitio', 'Año', 'Camara', 'Extra', 'Archivo','Fecha','Hora','Animal_proba','Animal','Guanaco_proba','Guanaco','Especie','Cantidad_proba','Cantidad','Validar','Validado'])
                 df = pd.concat([df, df_temporal], ignore_index=True)
                 df.to_pickle('InterfazUsuario/ArchivosUtiles/df.pkl')
-                pbar.write(f'Se guardaron los cambios después de procesar {len(df)} imágenes.')
+                print(f'Se guardaron los cambios después de procesar {len(df)} imágenes.')
                 resultados = []
 
     # Reintentar procesar las imágenes que fallaron
     if imagenes_fallidas:
-        pbar.reset(total=len(imagenes_fallidas))
-        pbar.set_description("Reintentando imágenes fallidas")
+        update_progress_bar(0, len(imagenes_fallidas))
         with concurrent.futures.ThreadPoolExecutor(max_workers=num_procesos_concurrentes) as executor:
-            futures = {executor.submit(procesar_imagen, path, modelPresencia, modelGuanaco, modelMegadetector, confianzaAnimalInf, confianzaAnimalSup, confianzaGuanaco, confianzaCantidad, pbar): path for path in imagenes_fallidas}  # Tus argumentos aquí
-            for future in concurrent.futures.as_completed(futures):
+            futures = {executor.submit(procesar_imagen, path, modelPresencia, modelGuanaco, modelMegadetector, confianzaAnimalInf, confianzaAnimalSup, confianzaGuanaco, confianzaCantidad): path for path in imagenes_fallidas}  # Tus argumentos aquí
+            for i, future in enumerate(concurrent.futures.as_completed(futures)):
                 resultado = future.result()
                 if resultado[1] == "error":
                     resultados.append(resultado)
                 else:
                     sitio, año, camara, extra, archivo = procesar_ruta(resultado[0])
                     resultados.append([resultado[0], sitio, año, camara, extra, archivo, None, None, None, None, None, None, None, None, None, None, 0])
-                pbar.update(1)
+                update_progress_bar(i+1, len(imagenes_fallidas))
 
     # Al final del procesamiento, guarda cualquier imagen restante
     if resultados:
         df_temporal = pd.DataFrame(resultados, columns=['Ruta', 'Sitio', 'Año', 'Camara', 'Extra', 'Archivo','Fecha','Hora','Animal_proba','Animal','Guanaco_proba','Guanaco','Especie','Cantidad_proba','Cantidad','Validar','Validado'])
         df = pd.concat([df, df_temporal], ignore_index=True)
         df.to_pickle('InterfazUsuario/ArchivosUtiles/df.pkl')
-        pbar.write(f'Se guardaron los cambios después de procesar {len(df)} imágenes.')
+        print(f'Se guardaron los cambios después de procesar {len(df)} imágenes.')
 
-    # Cerrar la barra de progreso
-    pbar.close()
 
     #  Ordenar por sitio, año, cámara, fecha y hora
     df = df.sort_values(by=['Sitio', 'Año', 'Camara', 'Fecha', 'Hora'])
@@ -209,27 +215,62 @@ def run_script():
     df.to_csv("InterfazUsuario/data/"+filename)
     messagebox.showinfo("Finalizado", "Se generó el archivo:"+filename)
 
-# Crear la ventana principal
+
+# Configuración de la ventana principal
 root = tk.Tk()
-root.title("Procesamiento Imágenes")
+root.title("Procesamiento de Imágenes")
+root.geometry("400x300")  # Ajusta según tus necesidades
 
-ruta_label = tk.Label(root, text="Ruta (Carpeta de imágenes):")
-ruta_label.pack()
+# Estilos y fuentes
+fuente_principal = Font(family="Verdana", size=12)
+fuente_botones = Font(family="Verdana", size=10, weight="bold")
+color_boton = "#122C12"
+color_texto = "white"
 
-ruta_entry = tk.Entry(root, width=40)
-ruta_entry.pack()
+# Configurar el estilo de ttk para forzar el fondo claro
+style = ttk.Style(root)
+style.theme_use('clam')  # 'clam', 'alt', 'default', 'classic' son algunos temas que puedes probar
+style.configure("TButton", font=fuente_botones, background=color_boton, foreground=color_texto)
+style.configure("TFrame", background="white")
+style.configure("TLabel", background="white", font=fuente_principal)
+style.configure("TEntry", font=fuente_principal)
+style.configure("Horizontal.TProgressbar", troughcolor='white', background=color_boton, lightcolor=color_boton, darkcolor=color_boton, bordercolor='white', thickness=20)
 
-browse_button = tk.Button(root, text="Seleccionar Carpeta", command=browse_folder,bg="black",fg="white")
-browse_button.pack()
+# Creación de widgets con estilo ttk
+mainframe = ttk.Frame(root, padding="3 3 12 12", style='TFrame')
+mainframe.grid(column=0, row=0, sticky=(tk.W, tk.E, tk.N, tk.S))
+mainframe.columnconfigure(0, weight=1)
+mainframe.columnconfigure(1, weight=2)  # Columna central para botones
+mainframe.columnconfigure(2, weight=1)
+mainframe.rowconfigure(0, weight=1)
 
-run_button = tk.Button(root, text="Procesar Imágenes", command=run_script,bg="black",fg="white")
-run_button.pack()
-imagen_logo = Image.open("InterfazUsuario/ArchivosUtiles/logo_rewilding.png")
-imagen_logo = imagen_logo.resize((180, 60))
+ruta_label = ttk.Label(mainframe, text="Ruta (Carpeta de imágenes):", style='TLabel')
+ruta_label.grid(column=1, row=1, sticky=(tk.W, tk.E))
+ruta_entry = ttk.Entry(mainframe, width=40, style='TEntry')
+ruta_entry.grid(column=1, row=2, sticky=(tk.W, tk.E))
+
+browse_button = ttk.Button(mainframe, text="Seleccionar Carpeta",command=browse_folder)
+browse_button.grid(column=1, row=3, sticky=tk.EW)
+
+run_button = ttk.Button(mainframe, text="Procesar Imágenes", command=run_script)
+run_button.grid(column=1, row=4, sticky=tk.EW)
+
+# Añadir la barra de progreso
+progress_var = tk.DoubleVar()
+progress_bar = ttk.Progressbar(mainframe, style="Horizontal.TProgressbar", variable=progress_var, maximum=100)
+progress_bar.grid(column=1, row=5, sticky=(tk.W, tk.E))
+
+# Label para mostrar el progreso actual y total
+progress_label = ttk.Label(mainframe, text="0/0 (0%)", style='TLabel')
+progress_label.grid(column=1, row=6, sticky=(tk.W, tk.E))
+
+# Añadir el logo
+imagen_logo = Image.open("InterfazUsuario/ArchivosUtiles/logo_rewilding.png").resize((180, 60))  # Asegúrate de poner la ruta correcta del logo
 imagen_logo = ImageTk.PhotoImage(imagen_logo)
+label_logo = ttk.Label(mainframe, image=imagen_logo)
+label_logo.grid(column=1, row=7, pady=10)
 
-label_logo = tk.Label(root, image=imagen_logo)
-label_logo.image = imagen_logo
-label_logo.pack()
+for child in mainframe.winfo_children():
+    child.grid_configure(padx=5, pady=5)
 
 root.mainloop()
