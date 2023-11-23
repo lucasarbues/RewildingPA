@@ -1,7 +1,7 @@
 import os
 
 # Suprimir advertencias de Intel MKL y NNPACK
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 os.environ['MKL_THREADING_LAYER'] = 'GNU'
 
 import pandas as pd
