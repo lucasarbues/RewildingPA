@@ -5,3 +5,5 @@ ModelosAI/ModelosFinales/*
 __pycache__
 .vscode
 .DS_Store
+Piloto2023/ArchivosUtiles/datasetTensores.pkl
+Piloto2023/ArchivosUtiles/datasetFechaHora.pkl
