@@ -270,12 +270,12 @@ color_texto = "white"
 
 # Configurar el estilo de ttk para forzar el fondo claro
 style = ttk.Style(root)
-style.theme_use('alt')  # 'clam', 'alt', 'default', 'classic' son algunos temas que puedes probar
+style.theme_use('alt')
 style.configure("TButton", font=fuente_botones, background=color_boton, foreground=color_texto)
 style.configure("TFrame", background="white")
 style.configure("TLabel", background="white", font=fuente_principal)
 style.configure("TEntry", font=fuente_principal)
-style.configure("Horizontal.TProgressbar", troughcolor='white', background=color_boton, lightcolor=color_boton, darkcolor=color_boton, bordercolor='white', thickness=20)
+style.configure("Horizontal.TProgressbar", troughcolor='white', background=color_boton, lightcolor=color_boton, darkcolor=color_boton, bordercolor='white', thickness=10)
 
 # Creación de widgets con estilo ttk
 mainframe = ttk.Frame(root, padding="3 3 12 12", style='TFrame')
@@ -284,16 +284,15 @@ root.grid_rowconfigure(0, weight=1)
 root.grid_columnconfigure(0, weight=1)
 
 # Configurar pesos de columnas para centrar el contenido
+# Si tienes tres columnas, establece el peso del medio a 0 y el de los lados a 1.
 mainframe.columnconfigure(0, weight=1)
 mainframe.columnconfigure(1, weight=0)
 mainframe.columnconfigure(2, weight=1)
-mainframe.rowconfigure(0, weight=1)
 
+# Widgets:
 ruta_label = ttk.Label(mainframe, text="Ruta (Carpeta de imágenes):", style='TLabel')
-ruta_entry = ttk.Entry(mainframe, width=40, style='TEntry')
-
-browse_button = ttk.Button(mainframe, text="Seleccionar Carpeta",command=browse_folder)
-
+ruta_entry = ttk.Entry(mainframe, style='TEntry')
+browse_button = ttk.Button(mainframe, text="Seleccionar Carpeta", command=browse_folder)
 run_button = ttk.Button(mainframe, text="Procesar Imágenes", command=run_script)
 
 # Añadir la barra de progreso
@@ -312,10 +311,10 @@ label_logo = ttk.Label(mainframe, image=imagen_logo)
 timer_label = ttk.Label(mainframe, text="Tiempo transcurrido: 00:00:00", style='TLabel')
 
 # Ajusta los widgets para que se expandan y llenen el espacio
-# Asegúrate de que los widgets estén en la columna del medio y se expandan hacia los lados
-ruta_label.grid(column=1, row=1, sticky=(tk.EW), padx=10)
-ruta_entry.grid(column=1, row=2, sticky=(tk.EW), padx=10)
-browse_button.grid(column=1, row=3, sticky=(tk.EW), padx=10)
+# Asegúrate de que los elementos que deseas centrar estén en la columna 1
+ruta_label.grid(column=1, row=1, sticky=tk.EW, padx=10)
+ruta_entry.grid(column=1, row=2, sticky=tk.EW, padx=10)
+browse_button.grid(column=1, row=3, sticky=tk.EW, padx=10)
 run_button.grid(column=1, row=4, sticky=(tk.EW), padx=10)
 progress_bar.grid(column=1, row=5, sticky=(tk.EW), padx=10)
 progress_label.grid(column=1, row=6, sticky=(tk.EW), padx=10)
@@ -324,6 +323,6 @@ timer_label.grid(column=1, row=8, sticky=(tk.EW), padx=10)
 
 # Asegúrate de que cada hijo de mainframe se expanda y llene el espacio
 for child in mainframe.winfo_children():
-    child.grid_configure(padx=10, pady=5, sticky=(tk.EW))
+    child.grid_configure(padx=10, pady=5, sticky=tk.EW)
 
 root.mainloop()
