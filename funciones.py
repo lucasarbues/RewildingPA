@@ -8,23 +8,29 @@ import tensorflow as tf
 from PIL import Image
 from PIL.ExifTags import TAGS
 import pickle
+import torchvision.transforms as transforms
+import contextlib
+from tqdm import tqdm
+import supervision as sv
+import torch
+from torch.hub import load_state_dict_from_url
+from yolov5.utils.general import non_max_suppression, scale_coords
 
+# # Leer objetos_s3
+# with open('ArchivosUtiles/objetos_s3.pkl', 'rb') as archivo:
+#     objetos_s3 = pickle.load(archivo)
 
-# Leer objetos_s3
-with open('ArchivosUtiles/objetos_s3.pkl', 'rb') as archivo:
-    objetos_s3 = pickle.load(archivo)
-
-# Importo Informacion del AccessKey.
-accessKey = os.getenv("AccessKey")
-secretKey = os.getenv("SecretKey")
-# Configura tus credenciales de AWS si aún no lo has hecho
-boto3.setup_default_session(aws_access_key_id=accessKey,
-                           aws_secret_access_key=secretKey,
-                           region_name='us-east-2')
-# Nombre del bucket
-nombre_bucket_s3 = 's3-pfa'
-# Crea un cliente de S3
-s3 = boto3.client('s3')
+# # Importo Informacion del AccessKey.
+# accessKey = os.getenv("AccessKey")
+# secretKey = os.getenv("SecretKey")
+# # Configura tus credenciales de AWS si aún no lo has hecho
+# boto3.setup_default_session(aws_access_key_id=accessKey,
+#                            aws_secret_access_key=secretKey,
+#                            region_name='us-east-2')
+# # Nombre del bucket
+# nombre_bucket_s3 = 's3-pfa'
+# # Crea un cliente de S3
+# s3 = boto3.client('s3')
 
 def definirRuta(fila):
     ruta = 'Muestreo ct '
@@ -212,53 +218,43 @@ def definirRuta(fila):
         return ruta
     return ''
 
-# Función para obtener los datos de una imagen en S3
-def extraerFechaHora(image_key):
-    if image_key != '':
-        try:
-            # Obtiene el objeto de la imagen desde S3
-            response = s3.get_object(Bucket='s3-pfa', Key=image_key)
-            # Obtiene el cuerpo del objeto (que contiene los datos de la imagen)
-            image_data = response['Body'].read()
+# # Función para obtener los datos de una imagen en S3
+# def extraerFechaHora(image_key):
+#     if image_key != '':
+#         try:
+#             # Obtiene el objeto de la imagen desde S3
+#             response = s3.get_object(Bucket='s3-pfa', Key=image_key)
+#             # Obtiene el cuerpo del objeto (que contiene los datos de la imagen)
+#             image_data = response['Body'].read()
 
-            # A continuación, puedes procesar los datos de la imagen como desees.
-            # Por ejemplo, puedes usar una biblioteca como Pillow (PIL) para trabajar con la imagen.
+#             # A continuación, puedes procesar los datos de la imagen como desees.
+#             # Por ejemplo, puedes usar una biblioteca como Pillow (PIL) para trabajar con la imagen.
 
-            # Aquí puedes agregar tu código para procesar la imagen y extraer los datos de metadatos.
-            # Por ejemplo, si quieres extraer datos EXIF:
+#             # Aquí puedes agregar tu código para procesar la imagen y extraer los datos de metadatos.
+#             # Por ejemplo, si quieres extraer datos EXIF:
         
-            image = Image.open(io.BytesIO(image_data))
-            exif_data = image._getexif()
+#             image = Image.open(io.BytesIO(image_data))
+#             exif_data = image._getexif()
             
-            # Crea un diccionario para almacenar los datos de metadata
-            metadata = {}
+#             # Crea un diccionario para almacenar los datos de metadata
+#             metadata = {}
 
-            # Itera a través de los datos EXIF y los almacena en el diccionario
-            for tag, value in exif_data.items():
-                tag_name = TAGS.get(tag, tag)
-                metadata[tag_name] = value
+#             # Itera a través de los datos EXIF y los almacena en el diccionario
+#             for tag, value in exif_data.items():
+#                 tag_name = TAGS.get(tag, tag)
+#                 metadata[tag_name] = value
 
 
-            fechahora = metadata.get('DateTime')
-            fecha, hora = fechahora.split(' ')
+#             fechahora = metadata.get('DateTime')
+#             fecha, hora = fechahora.split(' ')
 
-            # Devuelve los datos de metadatos en el formato que necesites (por ejemplo, como un diccionario)
-            return fecha, hora  # Cambia esto según tus necesidades
+#             # Devuelve los datos de metadatos en el formato que necesites (por ejemplo, como un diccionario)
+#             return fecha, hora  # Cambia esto según tus necesidades
 
-        except Exception as e:
-            print(f'Error al procesar la imagen {image_key}: {str(e)}')
-            return '',''
-    return '',''
-
-# def load_and_convert_image(img_path):
-#     # Leer y decodificar la imagen
-#     img = tf.io.read_file(img_path)
-#     img = tf.image.decode_image(img, channels=3, expand_animations=False)  # asumimos imágenes en color (3 canales)
-    
-#     # Cambiar el tamaño de la imagen a 150x150
-#     img_resized = tf.image.resize(img, [150, 150])
-    
-#     return tf.convert_to_tensor(img_resized)
+#         except Exception as e:
+#             print(f'Error al procesar la imagen {image_key}: {str(e)}')
+#             return '',''
+#     return '',''
 
 def load_and_convert_image(img_path):
     # Leer y decodificar la imagen
@@ -287,12 +283,6 @@ def get_date_time_from_image(path):
     return None, None
 
 
-import numpy as np
-from tqdm import tqdm
-import supervision as sv
-import torch
-from torch.hub import load_state_dict_from_url
-from yolov5.utils.general import non_max_suppression, scale_coords
 
 class YOLOV5Base:
     """
@@ -343,7 +333,10 @@ class YOLOV5Base:
             checkpoint = load_state_dict_from_url(url, map_location=torch.device(self.device))
         else:
             raise Exception("Need weights for inference.")
-        self.model = checkpoint["model"].float().fuse().eval()  # Convert to FP32 model
+        # self.model = checkpoint["model"].float().fuse().eval()  # Convert to FP32 model
+        # Temporarily redirect standard output to suppress print statements
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.model = checkpoint["model"].float().fuse().eval()
 
 
     def results_generation(self, preds):
@@ -396,4 +389,22 @@ class YOLOV5Base:
 
         return self.results_generation(preds.cpu().numpy())
 
+def convert_to_pytorch_tensor(tf_tensor, target_size=(640, 640)):
+    # Asegurarte de que los valores del tensor están en el rango [0, 1]
+    if tf.reduce_max(tf_tensor) > 1.0:
+        tf_tensor = tf_tensor / 255.0
 
+    # Convertir el tensor de TensorFlow a un array de NumPy
+    numpy_array = tf_tensor.numpy()
+
+    # Convertir el array de NumPy a un tensor de PyTorch
+    torch_tensor = torch.from_numpy(numpy_array)
+
+    # Cambiar el orden de las dimensiones a CHW si es necesario (PyTorch espera CHW en lugar de HWC)
+    torch_tensor = torch_tensor.permute(2, 0, 1)
+
+    # Cambiar el tamaño del tensor de PyTorch a target_size
+    resize_transform = transforms.Resize(target_size)
+    resized_torch_tensor = resize_transform(torch_tensor)
+
+    return resized_torch_tensor
