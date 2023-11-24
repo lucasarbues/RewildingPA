@@ -20,6 +20,7 @@ import torch
 import torchvision.transforms as transforms
 from torchvision.transforms import Resize
 import numpy as np
+import time
 
 
 # Agrega la carpeta padre al sys.path
@@ -121,10 +122,46 @@ def update_progress_bar(current, total):
     progress_label.config(text=f"{current}/{total} ({progress_var.get():.2f}%)")
     root.update_idletasks()
 
+# Variables para el temporizador
+start_time = None  # Marca de tiempo para cuando se inicia el procesamiento
+running = False  # Estado para saber si el temporizador está activo
+
+# Función para actualizar el temporizador
+def update_timer():
+    if running:
+        # Calcular el tiempo transcurrido
+        elapsed_time = time.time() - start_time
+        # Convertir a horas:minutos:segundos
+        elapsed_time_str = time.strftime("%H:%M:%S", time.gmtime(elapsed_time))
+        # Actualizar la etiqueta del temporizador
+        timer_label.config(text=f"Tiempo transcurrido: {elapsed_time_str}")
+        # Llamar a esta función nuevamente después de 1000ms (1 segundo)
+        root.after(1000, update_timer)
+
+# Función para iniciar el temporizador
+def start_timer():
+    global start_time, running
+    start_time = time.time()
+    running = True
+    update_timer()
+
+# Función para detener el temporizador
+def stop_timer():
+    global running
+    running = False
+    # Calculate the elapsed time
+    elapsed_time = time.time() - start_time
+    # Convert to hours:minutes:seconds
+    elapsed_time_str = time.strftime("%H:%M:%S", time.gmtime(elapsed_time))
+    return elapsed_time_str
+
 def run_script():
     if not ruta:
         messagebox.showerror("Error", "Por favor, selecciona una ruta válida.")
         return
+
+    # Iniciar el temporizador al comenzar el procesamiento
+    start_timer()
 
     # Inicializacion
     modelPresencia = load_model('ModelosAI/ModelosFinales/modeloAnimalVGG16.h5')
@@ -144,11 +181,11 @@ def run_script():
             paths_filtrados.append(os.path.join(root, file))
 
     # Verificar si el archivo CSV existe
-    archivo_existe = os.path.exists('InterfazUsuario/ArchivosUtiles/df.pkl')
+    archivo_existe = os.path.exists('InterfazUsuario/ArchivosUtiles/df.feather')
 
     # Si el archivo existe, cargarlo en un DataFrame
     if archivo_existe:
-        df = pd.read_pickle('InterfazUsuario/ArchivosUtiles/df.pkl')
+        df = pd.read_feather('InterfazUsuario/ArchivosUtiles/df.feather')
     else:
         df = pd.DataFrame(columns=['Ruta', 'Sitio', 'Año', 'Camara', 'Extra', 'Archivo','Fecha','Hora','Animal_proba','Animal','Guanaco_proba','Guanaco','Especie','Cantidad_proba','Cantidad','Validar','Validado'])
 
@@ -176,10 +213,11 @@ def run_script():
             update_progress_bar(i+1, total_imagenes)
 
             # Cada 1000 imágenes, guarda el DataFrame
-            if len(resultados) > 1000:
+            if len(resultados) > 10000:
                 df_temporal = pd.DataFrame(resultados, columns=['Ruta', 'Sitio', 'Año', 'Camara', 'Extra', 'Archivo','Fecha','Hora','Animal_proba','Animal','Guanaco_proba','Guanaco','Especie','Cantidad_proba','Cantidad','Validar','Validado'])
                 df = pd.concat([df, df_temporal], ignore_index=True)
-                df.to_pickle('InterfazUsuario/ArchivosUtiles/df.pkl')
+                # df.to_pickle('InterfazUsuario/ArchivosUtiles/df.pkl')
+                df.to_feather('Piloto2023/ArchivosUtiles/df.feather')
                 print(f'Se guardaron los cambios después de procesar {len(df)} imágenes.')
                 resultados = []
 
@@ -201,7 +239,8 @@ def run_script():
     if resultados:
         df_temporal = pd.DataFrame(resultados, columns=['Ruta', 'Sitio', 'Año', 'Camara', 'Extra', 'Archivo','Fecha','Hora','Animal_proba','Animal','Guanaco_proba','Guanaco','Especie','Cantidad_proba','Cantidad','Validar','Validado'])
         df = pd.concat([df, df_temporal], ignore_index=True)
-        df.to_pickle('InterfazUsuario/ArchivosUtiles/df.pkl')
+        # df.to_pickle('InterfazUsuario/ArchivosUtiles/df.pkl')
+        df.to_feather('Piloto2023/ArchivosUtiles/df.feather')
         print(f'Se guardaron los cambios después de procesar {len(df)} imágenes.')
 
 
@@ -213,8 +252,10 @@ def run_script():
     filename = simpledialog.askstring("Guardar CSV", "Ingrese el nombre del archivo CSV:", initialvalue=default_filename)
 
     df.to_csv("InterfazUsuario/data/"+filename)
-    messagebox.showinfo("Finalizado", "Se generó el archivo:"+filename)
 
+    # At the end of your script where you want to stop the timer and show the message
+    elapsed_time_str = stop_timer()  # This will stop the timer and return the elapsed time
+    messagebox.showinfo("Finalizado", f"Se generó el archivo: {filename}\nTiempo transcurrido: {elapsed_time_str}")
 
 # Configuración de la ventana principal
 root = tk.Tk()
@@ -229,7 +270,7 @@ color_texto = "white"
 
 # Configurar el estilo de ttk para forzar el fondo claro
 style = ttk.Style(root)
-style.theme_use('clam')  # 'clam', 'alt', 'default', 'classic' son algunos temas que puedes probar
+style.theme_use('alt')  # 'clam', 'alt', 'default', 'classic' son algunos temas que puedes probar
 style.configure("TButton", font=fuente_botones, background=color_boton, foreground=color_texto)
 style.configure("TFrame", background="white")
 style.configure("TLabel", background="white", font=fuente_principal)
@@ -239,38 +280,50 @@ style.configure("Horizontal.TProgressbar", troughcolor='white', background=color
 # Creación de widgets con estilo ttk
 mainframe = ttk.Frame(root, padding="3 3 12 12", style='TFrame')
 mainframe.grid(column=0, row=0, sticky=(tk.W, tk.E, tk.N, tk.S))
+root.grid_rowconfigure(0, weight=1)
+root.grid_columnconfigure(0, weight=1)
+
+# Configurar pesos de columnas para centrar el contenido
 mainframe.columnconfigure(0, weight=1)
-mainframe.columnconfigure(1, weight=2)  # Columna central para botones
+mainframe.columnconfigure(1, weight=0)
 mainframe.columnconfigure(2, weight=1)
 mainframe.rowconfigure(0, weight=1)
 
 ruta_label = ttk.Label(mainframe, text="Ruta (Carpeta de imágenes):", style='TLabel')
-ruta_label.grid(column=1, row=1, sticky=(tk.W, tk.E))
 ruta_entry = ttk.Entry(mainframe, width=40, style='TEntry')
-ruta_entry.grid(column=1, row=2, sticky=(tk.W, tk.E))
 
 browse_button = ttk.Button(mainframe, text="Seleccionar Carpeta",command=browse_folder)
-browse_button.grid(column=1, row=3, sticky=tk.EW)
 
 run_button = ttk.Button(mainframe, text="Procesar Imágenes", command=run_script)
-run_button.grid(column=1, row=4, sticky=tk.EW)
 
 # Añadir la barra de progreso
 progress_var = tk.DoubleVar()
 progress_bar = ttk.Progressbar(mainframe, style="Horizontal.TProgressbar", variable=progress_var, maximum=100)
-progress_bar.grid(column=1, row=5, sticky=(tk.W, tk.E))
 
 # Label para mostrar el progreso actual y total
 progress_label = ttk.Label(mainframe, text="0/0 (0%)", style='TLabel')
-progress_label.grid(column=1, row=6, sticky=(tk.W, tk.E))
 
 # Añadir el logo
-imagen_logo = Image.open("InterfazUsuario/ArchivosUtiles/logo_rewilding.png").resize((180, 60))  # Asegúrate de poner la ruta correcta del logo
+imagen_logo = Image.open("InterfazUsuario/ArchivosUtiles/logo_rewilding.png").resize((180, 60))
 imagen_logo = ImageTk.PhotoImage(imagen_logo)
 label_logo = ttk.Label(mainframe, image=imagen_logo)
-label_logo.grid(column=1, row=7, pady=10)
 
+# Label para mostrar el temporizador
+timer_label = ttk.Label(mainframe, text="Tiempo transcurrido: 00:00:00", style='TLabel')
+
+# Ajusta los widgets para que se expandan y llenen el espacio
+# Asegúrate de que los widgets estén en la columna del medio y se expandan hacia los lados
+ruta_label.grid(column=1, row=1, sticky=(tk.EW), padx=10)
+ruta_entry.grid(column=1, row=2, sticky=(tk.EW), padx=10)
+browse_button.grid(column=1, row=3, sticky=(tk.EW), padx=10)
+run_button.grid(column=1, row=4, sticky=(tk.EW), padx=10)
+progress_bar.grid(column=1, row=5, sticky=(tk.EW), padx=10)
+progress_label.grid(column=1, row=6, sticky=(tk.EW), padx=10)
+label_logo.grid(column=1, row=7, pady=10, sticky=(tk.EW), padx=10)
+timer_label.grid(column=1, row=8, sticky=(tk.EW), padx=10)
+
+# Asegúrate de que cada hijo de mainframe se expanda y llene el espacio
 for child in mainframe.winfo_children():
-    child.grid_configure(padx=5, pady=5)
+    child.grid_configure(padx=10, pady=5, sticky=(tk.EW))
 
 root.mainloop()
