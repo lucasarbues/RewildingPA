@@ -3,12 +3,12 @@ import pandas as pd
 import tkinter as tk
 from tkinter import filedialog, simpledialog, messagebox, messagebox, ttk
 from tkinter.font import Font
-from tensorflow.keras.models import load_model
 import tensorflow as tf
+tf.config.set_visible_devices([], 'GPU')
+from tensorflow.keras.models import load_model
 from datetime import datetime
 from PIL import Image, ImageTk
 import sys
-# from tqdm import tqdm
 import concurrent
 import concurrent.futures
 import torch
@@ -16,6 +16,11 @@ import torchvision.transforms as transforms
 from torchvision.transforms import Resize
 import numpy as np
 import time
+import logging
+
+# Configuración del logging
+logging.basicConfig(filename='log_procesamiento.log', level=logging.ERROR, format='%(asctime)s %(levelname)s:%(message)s')
+logger = logging.getLogger(__name__)
 
 # Suprimir advertencias de Intel MKL, NNPACK y TensorFlow
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
@@ -55,7 +60,7 @@ def Megadetector(image_path, image_tensor , model):
         return average_confidence, num_detections
 
     except Exception as e:
-        print(f'Megadetector Falla: {image_path}: {str(e)}')
+        logger.error(f'Megadetector Falla: {image_path}: {str(e)}')
         return None, None
 
 def procesar_imagen(full_path, dfTensor, modelPresencia, modelGuanaco, modelMegadetector, confianzaAnimalInf, confianzaAnimalSup, confianzaGuanaco, confianzaCantidad):
@@ -94,7 +99,7 @@ def procesar_imagen(full_path, dfTensor, modelPresencia, modelGuanaco, modelMega
         return full_path, animal_proba, animal, guanaco_proba, guanaco, especie, cantidad_proba, cantidad, validar, 0
 
     except Exception as e:
-        print(f'Error al procesar la imagen {full_path}: {str(e)}')
+        logger.error(f'Error al procesar la imagen {full_path}: {str(e)}')
     return full_path, "error", None, None, None, None, None, None, None, None
 
 
@@ -153,18 +158,23 @@ def run_script():
     confianzaGuanaco = 0.71
     confianzaCantidad = 0.69
 
-    df = pd.read_csv('Piloto2023/ArchivosUtiles/Muestreo_CT_PatAzul.csv')
+    # Verificar si el archivo CSV existe
+    archivo_existe = os.path.exists('Piloto2023/ArchivosUtiles/df.feather')
+
+    # Si el archivo existe, cargarlo en un DataFrame
+    if archivo_existe:
+        df = pd.read_feather('Piloto2023/ArchivosUtiles/df.feather')
+    else:
+        df = pd.read_csv('Piloto2023/ArchivosUtiles/Muestreo_CT_PatAzul.csv')
+        for column in ['Ruta', 'Animal_proba', 'Animal', 'Guanaco_proba', 'Guanaco', 'Especie', 'Cantidad_proba', 'Cantidad', 'Validar', 'Validado']:
+            if column not in df.columns:
+                # Añadir la columna a `df` con valores por defecto NaN
+                df[column] = np.nan
+
     dfTensor = pd.read_pickle('Piloto2023/ArchivosUtiles/datasetTensores.pkl')
 
-    # df = df.head(100)
-
-    for column in ['Ruta', 'Animal_proba', 'Animal', 'Guanaco_proba', 'Guanaco', 'Especie', 'Cantidad_proba', 'Cantidad', 'Validar', 'Validado']:
-        if column not in df.columns:
-            # Añadir la columna a `df` con valores por defecto NaN
-            df[column] = np.nan
-
     # Obtener las rutas de las imágenes
-    paths_filtrados = df['Ruta'].tolist()
+    paths_filtrados = list(set(df['Ruta']) - set(df[df['Animal'].notna()]['Ruta']))
 
     # Crear una barra de progreso con tqdm
     total_imagenes = len(paths_filtrados)
