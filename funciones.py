@@ -1,9 +1,9 @@
 import re
-import boto3
-import cv2
+# import boto3
+# import cv2
 import numpy as np
 import io
-import os
+# import os
 import tensorflow as tf
 from PIL import Image
 from PIL.ExifTags import TAGS
@@ -11,14 +11,14 @@ import pickle
 import torchvision.transforms as transforms
 import contextlib
 from tqdm import tqdm
-import supervision as sv
+# import supervision as sv
 import torch
 from torch.hub import load_state_dict_from_url
 from yolov5.utils.general import non_max_suppression, scale_coords
 
-# # Leer objetos_s3
-# with open('ArchivosUtiles/objetos_s3.pkl', 'rb') as archivo:
-#     objetos_s3 = pickle.load(archivo)
+# Leer objetos_s3
+with open('ArchivosUtiles/objetos_s3.pkl', 'rb') as archivo:
+    objetos_s3 = pickle.load(archivo)
 
 # # Importo Informacion del AccessKey.
 # accessKey = os.getenv("AccessKey")
@@ -217,44 +217,6 @@ def definirRuta(fila):
     if ruta in objetos_s3:
         return ruta
     return ''
-
-# # Función para obtener los datos de una imagen en S3
-# def extraerFechaHora(image_key):
-#     if image_key != '':
-#         try:
-#             # Obtiene el objeto de la imagen desde S3
-#             response = s3.get_object(Bucket='s3-pfa', Key=image_key)
-#             # Obtiene el cuerpo del objeto (que contiene los datos de la imagen)
-#             image_data = response['Body'].read()
-
-#             # A continuación, puedes procesar los datos de la imagen como desees.
-#             # Por ejemplo, puedes usar una biblioteca como Pillow (PIL) para trabajar con la imagen.
-
-#             # Aquí puedes agregar tu código para procesar la imagen y extraer los datos de metadatos.
-#             # Por ejemplo, si quieres extraer datos EXIF:
-        
-#             image = Image.open(io.BytesIO(image_data))
-#             exif_data = image._getexif()
-            
-#             # Crea un diccionario para almacenar los datos de metadata
-#             metadata = {}
-
-#             # Itera a través de los datos EXIF y los almacena en el diccionario
-#             for tag, value in exif_data.items():
-#                 tag_name = TAGS.get(tag, tag)
-#                 metadata[tag_name] = value
-
-
-#             fechahora = metadata.get('DateTime')
-#             fecha, hora = fechahora.split(' ')
-
-#             # Devuelve los datos de metadatos en el formato que necesites (por ejemplo, como un diccionario)
-#             return fecha, hora  # Cambia esto según tus necesidades
-
-#         except Exception as e:
-#             print(f'Error al procesar la imagen {image_key}: {str(e)}')
-#             return '',''
-#     return '',''
 
 def load_and_convert_image(img_path):
     # Leer y decodificar la imagen
