@@ -10,6 +10,7 @@ from tkinter import filedialog, simpledialog, messagebox, messagebox, ttk
 from tkinter.font import Font
 from tensorflow.keras.models import load_model
 import tensorflow as tf
+# tf.config.set_visible_devices([], 'GPU')
 from datetime import datetime
 from PIL import Image, ImageTk
 import sys
