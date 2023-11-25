@@ -12,6 +12,7 @@ import torchvision.transforms as transforms
 import contextlib
 from tqdm import tqdm
 # import supervision as sv
+from torchvision import models
 import torch
 from torch.hub import load_state_dict_from_url
 from yolov5.utils.general import non_max_suppression, scale_coords

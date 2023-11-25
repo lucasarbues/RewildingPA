@@ -7,3 +7,4 @@ __pycache__
 .DS_Store
 Piloto2023/ArchivosUtiles/datasetTensores.pkl
 Piloto2023/ArchivosUtiles/datasetFechaHora.pkl
+env

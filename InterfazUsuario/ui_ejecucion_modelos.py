@@ -10,7 +10,7 @@ from tkinter import filedialog, simpledialog, messagebox, messagebox, ttk
 from tkinter.font import Font
 from tensorflow.keras.models import load_model
 import tensorflow as tf
-# tf.config.set_visible_devices([], 'GPU')
+tf.config.set_visible_devices([], 'GPU')
 from datetime import datetime
 from PIL import Image, ImageTk
 import sys
@@ -183,6 +183,7 @@ def run_script():
 
     # Verificar si el archivo CSV existe
     archivo_existe = os.path.exists('InterfazUsuario/ArchivosUtiles/df.feather')
+    print(archivo_existe)
 
     # Si el archivo existe, cargarlo en un DataFrame
     if archivo_existe:
@@ -217,8 +218,7 @@ def run_script():
             if len(resultados) > 10000:
                 df_temporal = pd.DataFrame(resultados, columns=['Ruta', 'Sitio', 'Año', 'Camara', 'Extra', 'Archivo','Fecha','Hora','Animal_proba','Animal','Guanaco_proba','Guanaco','Especie','Cantidad_proba','Cantidad','Validar','Validado'])
                 df = pd.concat([df, df_temporal], ignore_index=True)
-                # df.to_pickle('InterfazUsuario/ArchivosUtiles/df.pkl')
-                df.to_feather('Piloto2023/ArchivosUtiles/df.feather')
+                df.to_feather('InterfazUsuario/ArchivosUtiles/df.feather')
                 print(f'Se guardaron los cambios después de procesar {len(df)} imágenes.')
                 resultados = []
 
@@ -240,8 +240,7 @@ def run_script():
     if resultados:
         df_temporal = pd.DataFrame(resultados, columns=['Ruta', 'Sitio', 'Año', 'Camara', 'Extra', 'Archivo','Fecha','Hora','Animal_proba','Animal','Guanaco_proba','Guanaco','Especie','Cantidad_proba','Cantidad','Validar','Validado'])
         df = pd.concat([df, df_temporal], ignore_index=True)
-        # df.to_pickle('InterfazUsuario/ArchivosUtiles/df.pkl')
-        df.to_feather('Piloto2023/ArchivosUtiles/df.feather')
+        df.to_feather('InterfazUsuario/ArchivosUtiles/df.feather')
         print(f'Se guardaron los cambios después de procesar {len(df)} imágenes.')
 
 

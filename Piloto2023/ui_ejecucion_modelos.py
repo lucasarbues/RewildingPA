@@ -4,7 +4,7 @@ import tkinter as tk
 from tkinter import filedialog, simpledialog, messagebox, messagebox, ttk
 from tkinter.font import Font
 import tensorflow as tf
-tf.config.set_visible_devices([], 'GPU')
+# tf.config.set_visible_devices([], 'GPU')
 from tensorflow.keras.models import load_model
 from datetime import datetime
 from PIL import Image, ImageTk

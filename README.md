@@ -21,6 +21,89 @@ La Fundación Rewilding Argentina desempeña un papel esencial en la conservaci�
 
 La solución propuesta en este proyecto es la adopción de una tecnología basada en Inteligencia Artificial para el procesamiento y clasificación automatizada de dichas imágenes. Esta innovación no solo mejora la precisión del análisis, sino que también optimiza la eficiencia del proceso, permitiendo a la fundación fundamentar sus estrategias de conservación y restauración en datos más robustos y confiables.
 
+## Instalacion
+Este repositorio requiere Python 3.9.6. Se recomienda usar `pyenv` para gestionar las versiones de Python y `venv` para crear entornos virtuales.
+
+## Instalación de `pyenv`
+
+### En Linux y macOS
+
+#### 1. Instala las dependencias necesarias:
+   - En Debian/Ubuntu:
+     ```
+     sudo apt-get update; sudo apt-get install make build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev libncursesw5-dev xz-utils tk-dev libffi-dev liblzma-dev python-openssl git
+     ```
+   - En Fedora/CentOS/RHEL:
+     ```
+     sudo yum install @development zlib-devel bzip2 bzip2-devel readline-devel sqlite sqlite-devel openssl-devel xz xz-devel libffi-devel git
+     ```
+   - En macOS (usando Homebrew):
+     ```
+     brew install openssl readline sqlite3 xz zlib
+     ```
+
+#### 2. Instala `pyenv`:
+   - Clona el repositorio de `pyenv`:
+     ```
+     git clone https://github.com/pyenv/pyenv.git ~/.pyenv
+     ```
+   - Configura el entorno agregando lo siguiente a tu archivo `.bashrc` o `.zshrc`:
+     ```
+     export PYENV_ROOT="$HOME/.pyenv"
+     export PATH="$PYENV_ROOT/bin:$PATH"
+     eval "$(pyenv init --path)"
+     ```
+
+### En Windows
+- `pyenv` no es compatible directamente con Windows, pero puedes usar `pyenv-win` a través de Git Bash o WSL.
+
+## Instalación de Python 3.9.6
+
+#### 1. Instala Python 3.9.6 usando `pyenv`:
+   - Ejecuta:
+     ```
+     pyenv install 3.9.6
+     ```
+#### 2. Establece Python 3.9.6 como la versión predeterminada:
+   - Globalmente:
+     ```
+     pyenv global 3.9.6
+     ```
+   - O en un directorio específico:
+     ```
+     pyenv local 3.9.6
+     ```
+
+## Uso de `venv` para Crear un Entorno Virtual
+
+#### 1. Crea un entorno virtual:
+   - Navega al directorio de tu proyecto.
+   - Ejecuta:
+     ```
+     python -m venv <nombre_del_entorno>
+     ```
+
+#### 2. Activa el entorno virtual:
+   - En Linux/macOS:
+     ```
+     source <nombre_del_entorno>/bin/activate
+     ```
+   - En Windows:
+     ```
+     <nombre_del_entorno>\Scripts\activate
+     ```
+
+#### 3. Instala los paquetes necesarios:
+   - Asegúrate de que `pip` esté actualizado:
+     ```
+     pip install --upgrade pip
+     ```
+   - Instala los paquetes desde `requirements.txt`:
+     ```
+     pip install -r requirements.txt
+     ```
+
+
 ## Metodología
 
 #### 1. **Preparación de Datos**:
