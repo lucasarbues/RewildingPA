@@ -21,87 +21,55 @@ La Fundación Rewilding Argentina desempeña un papel esencial en la conservaci�
 
 La solución propuesta en este proyecto es la adopción de una tecnología basada en Inteligencia Artificial para el procesamiento y clasificación automatizada de dichas imágenes. Esta innovación no solo mejora la precisión del análisis, sino que también optimiza la eficiencia del proceso, permitiendo a la fundación fundamentar sus estrategias de conservación y restauración en datos más robustos y confiables.
 
-## Instalacion
-Este repositorio requiere Python 3.9.6. Se recomienda usar `pyenv` para gestionar las versiones de Python y `venv` para crear entornos virtuales.
+## Instrucciones de Instalación
 
-## Instalación de `pyenv`
+Este repositorio requiere Python 3.9.6. Se recomienda usar `conda` para crear entornos virtuales y gestionar las versiones de Python y paquetes.
 
-### En Linux y macOS
+### Instalación de Conda
 
-#### 1. Instala las dependencias necesarias:
-   - En Debian/Ubuntu:
-     ```
-     sudo apt-get update; sudo apt-get install make build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev libncursesw5-dev xz-utils tk-dev libffi-dev liblzma-dev python-openssl git
-     ```
-   - En Fedora/CentOS/RHEL:
-     ```
-     sudo yum install @development zlib-devel bzip2 bzip2-devel readline-devel sqlite sqlite-devel openssl-devel xz xz-devel libffi-devel git
-     ```
-   - En macOS (usando Homebrew):
-     ```
-     brew install openssl readline sqlite3 xz zlib
-     ```
+Si aún no tienes Conda instalado, puedes descargar e instalar Anaconda o Miniconda desde sus respectivos sitios web. Anaconda incluye un conjunto de paquetes científicos por defecto, mientras que Miniconda es una versión más liviana que te permite instalar paquetes según sea necesario.
 
-#### 2. Instala `pyenv`:
-   - Clona el repositorio de `pyenv`:
+#### Crear un Nuevo Entorno Conda con Python 3.9.6
+
+1. **Crear el Entorno**:
+   - Abre tu terminal o Anaconda Prompt y ejecuta:
      ```
-     git clone https://github.com/pyenv/pyenv.git ~/.pyenv
+     conda create --name ENV python=3.9.6
      ```
-   - Configura el entorno agregando lo siguiente a tu archivo `.bashrc` o `.zshrc`:
+     Esto crea un nuevo entorno llamado `ENV` con Python 3.9.6.
+
+2. **Activar el Entorno**:
+   - Activa el entorno con:
      ```
-     export PYENV_ROOT="$HOME/.pyenv"
-     export PATH="$PYENV_ROOT/bin:$PATH"
-     eval "$(pyenv init --path)"
+     conda activate ENV
      ```
 
-### En Windows
-- `pyenv` no es compatible directamente con Windows, pero puedes usar `pyenv-win` a través de Git Bash o WSL.
+### Instalación de Paquetes con Conda
 
-## Instalación de Python 3.9.6
-
-#### 1. Instala Python 3.9.6 usando `pyenv`:
-   - Ejecuta:
+1. **Instalar Paquetes Específicos para TensorFlow**:
+   - Dentro del entorno activado, instala TensorFlow y dependencias relacionadas utilizando Conda:
      ```
-     pyenv install 3.9.6
-     ```
-#### 2. Establece Python 3.9.6 como la versión predeterminada:
-   - Globalmente:
-     ```
-     pyenv global 3.9.6
-     ```
-   - O en un directorio específico:
-     ```
-     pyenv local 3.9.6
+     conda install tensorflow tensorflow-estimator=2.15.0 tensorflow-io-gcs-filesystem=0.34.0 tensorflow-macos=2.15.0
      ```
 
-## Uso de `venv` para Crear un Entorno Virtual
-
-#### 1. Crea un entorno virtual:
-   - Navega al directorio de tu proyecto.
-   - Ejecuta:
-     ```
-     python -m venv <nombre_del_entorno>
-     ```
-
-#### 2. Activa el entorno virtual:
-   - En Linux/macOS:
-     ```
-     source <nombre_del_entorno>/bin/activate
-     ```
-   - En Windows:
-     ```
-     <nombre_del_entorno>\Scripts\activate
-     ```
-
-#### 3. Instala los paquetes necesarios:
+2. **Instalar Otras Dependencias desde `requirements.txt`**:
    - Asegúrate de que `pip` esté actualizado:
      ```
      pip install --upgrade pip
      ```
-   - Instala los paquetes desde `requirements.txt`:
+   - Instala cualquier otro paquete necesario desde `requirements.txt`:
      ```
      pip install -r requirements.txt
      ```
+     Nota: Asegúrate de que `requirements.txt` no incluya paquetes ya instalados con Conda para evitar conflictos.
+
+### Uso del Entorno
+
+- Para activar el entorno `ENV`, usa:
+  - En Linux/macOS: `conda activate ENV`
+  - En Windows: `activate ENV`
+
+- Para desactivar el entorno, usa `conda deactivate`.
 
 
 ## Metodología
