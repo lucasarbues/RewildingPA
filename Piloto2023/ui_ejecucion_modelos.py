@@ -4,7 +4,7 @@ import tkinter as tk
 from tkinter import filedialog, simpledialog, messagebox, messagebox, ttk
 from tkinter.font import Font
 import tensorflow as tf
-# tf.config.set_visible_devices([], 'GPU')
+tf.config.set_visible_devices([], 'GPU')
 from tensorflow.keras.models import load_model
 from datetime import datetime
 from PIL import Image, ImageTk
@@ -17,9 +17,10 @@ from torchvision.transforms import Resize
 import numpy as np
 import time
 import logging
+import threading
 
 # Configuración del logging
-logging.basicConfig(filename='log_procesamiento.log', level=logging.ERROR, format='%(asctime)s %(levelname)s:%(message)s')
+logging.basicConfig(filename='Piloto2023/log_warnings.log', level=logging.ERROR, format='%(asctime)s %(levelname)s:%(message)s')
 logger = logging.getLogger(__name__)
 
 # Suprimir advertencias de Intel MKL, NNPACK y TensorFlow
@@ -103,12 +104,17 @@ def procesar_imagen(full_path, dfTensor, modelPresencia, modelGuanaco, modelMega
     return full_path, "error", None, None, None, None, None, None, None, None
 
 
-def update_progress_bar(current, total):
+# Variables para la barra de progreso
+current = 0
+total_imagenes = 0
+
+def update_progress_bar():
     """Actualiza la barra de progreso en la interfaz de Tkinter."""
-    progress = 100 * (current / total)
-    progress_var.set(progress)
-    progress_label.config(text=f"{current}/{total} ({progress_var.get():.2f}%)")
-    root.update_idletasks()
+    if(total_imagenes > 0):
+        progress = 100 * (current / total_imagenes)
+        progress_var.set(progress)
+        progress_label.config(text=f"{current}/{total_imagenes} ({progress_var.get():.2f}%)")
+        root.after(1000, update_progress_bar)
 
 # Variables para el temporizador
 start_time = None  # Marca de tiempo para cuando se inicia el procesamiento
@@ -149,6 +155,13 @@ def run_script():
     # Iniciar el temporizador al comenzar el procesamiento
     start_timer()
 
+    # Iniciar el procesamiento de imágenes en un hilo separado
+    processing_thread = threading.Thread(target=process_images)
+    processing_thread.start()
+
+def process_images():
+    global current, total_imagenes
+
     modelPresencia = load_model('ModelosAI/ModelosFinales/modeloAnimalVGG16.h5')
     modelGuanaco = load_model('ModelosAI/ModelosFinales/modeloGuanacoVGG16.h5')
     modelMegadetector = YOLOV5Base(weights='ModelosAI/ModelosFinales/modeloMegadetector.pt', device='cpu')
@@ -165,7 +178,7 @@ def run_script():
     if archivo_existe:
         df = pd.read_feather('Piloto2023/ArchivosUtiles/df.feather')
     else:
-        df = pd.read_csv('Piloto2023/ArchivosUtiles/Muestreo_CT_PatAzul.csv')
+        df = pd.read_csv('Piloto2023/ArchivosUtiles/Muestreo_CT_PatAzul.csv', low_memory=False)
         for column in ['Ruta', 'Animal_proba', 'Animal', 'Guanaco_proba', 'Guanaco', 'Especie', 'Cantidad_proba', 'Cantidad', 'Validar', 'Validado']:
             if column not in df.columns:
                 # Añadir la columna a `df` con valores por defecto NaN
@@ -178,6 +191,7 @@ def run_script():
 
     # Crear una barra de progreso con tqdm
     total_imagenes = len(paths_filtrados)
+    update_progress_bar()
 
     # Número de procesos o subprocesos concurrentes que deseas ejecutar
     num_procesos_concurrentes = os.cpu_count()  # Puedes ajustar este valor
@@ -193,7 +207,8 @@ def run_script():
                 imagenes_fallidas.append(resultado[0])
             else:
                 resultados.append(resultado)
-            update_progress_bar(i+1, total_imagenes)
+            current += 1
+            update_progress_bar()
 
             # Cada 1000 imágenes, guarda el DataFrame
             if len(resultados) > 10000:
@@ -214,7 +229,9 @@ def run_script():
 
     # Reintentar procesar las imágenes que fallaron
     if imagenes_fallidas:
-        update_progress_bar(0, len(imagenes_fallidas))
+        total_imagenes = len(imagenes_fallidas)
+        current = 0
+        update_progress_bar()
         with concurrent.futures.ThreadPoolExecutor(max_workers=num_procesos_concurrentes) as executor:
             futures = {executor.submit(procesar_imagen, path, dfTensor, modelPresencia, modelGuanaco, modelMegadetector, confianzaAnimalInf, confianzaAnimalSup, confianzaGuanaco, confianzaCantidad): path for path in imagenes_fallidas}  # Tus argumentos aquí
             for i, future in enumerate(concurrent.futures.as_completed(futures)):
@@ -224,7 +241,8 @@ def run_script():
                 else:
                     # sitio, año, camara, extra, archivo = procesar_ruta(resultado[0])
                     resultados.append([resultado[0], None, None, None, None, None, None, None, None, 0])
-                update_progress_bar(i+1, len(imagenes_fallidas))
+                current += 1
+                update_progress_bar()
 
     # Al final del procesamiento, guarda cualquier imagen restante
     if resultados:
@@ -254,9 +272,11 @@ def run_script():
     
     # At the end of your script where you want to stop the timer and show the message
     elapsed_time_str = stop_timer()  # This will stop the timer and return the elapsed time
-    messagebox.showinfo("Finalizado", f"Se generó el archivo: {filename}\nTiempo transcurrido: {elapsed_time_str}")
+    # Programar la llamada a show_final_message en el hilo principal
+    root.after_idle(show_final_message, filename, elapsed_time_str)
 
-    
+def show_final_message(filename, elapsed_time_str):
+    messagebox.showinfo("Finalizado", f"Se generó el archivo: {filename}\nTiempo transcurrido: {elapsed_time_str}")
 
 
 # Configuración de la ventana principal
