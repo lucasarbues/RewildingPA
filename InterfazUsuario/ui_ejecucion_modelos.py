@@ -325,7 +325,7 @@ progress_var = tk.DoubleVar()
 progress_bar = ttk.Progressbar(mainframe, style="Horizontal.TProgressbar", variable=progress_var, maximum=100)
 
 # Label para mostrar el progreso actual y total
-progress_label = ttk.Label(mainframe, text="0/0 (0%)", style='TLabel')
+progress_label = ttk.Label(mainframe, text="", style='TLabel')
 
 # Añadir el logo
 imagen_logo = Image.open("InterfazUsuario/ArchivosUtiles/logo_rewilding.png").resize((180, 60))
