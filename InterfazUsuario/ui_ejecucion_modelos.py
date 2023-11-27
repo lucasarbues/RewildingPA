@@ -153,6 +153,7 @@ def start_timer():
     global start_time, running
     start_time = time.time()
     running = True
+    progress_label.config(text=f"Iniciando...")
     update_timer()
 
 # Función para detener el temporizador
