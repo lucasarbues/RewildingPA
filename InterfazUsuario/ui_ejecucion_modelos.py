@@ -184,7 +184,7 @@ def process_images():
     global total_imagenes, current
     # Inicializacion
     modelPresencia = load_model('ModelosAI/ModelosFinales/modeloAnimalVGG16.h5')
-    modelGuanaco = load_model('ModelosAI/ModelosFinales/modeloGuanacoVGG16.h5')
+    modelGuanaco = load_model('ModelosAI/ModelosFinales/modeloGuanacoRN50.h5')
     modelMegadetector = YOLOV5Base(weights='ModelosAI/ModelosFinales/modeloMegadetector.pt', device='cpu')
 
     confianzaAnimalInf = 0.01
