@@ -94,7 +94,7 @@ def procesar_imagen(full_path, dfTensor, modelPresencia, modelGuanaco, modelMega
             mean_confidence, cant_pred = Megadetector(full_path, image_tensor, modelMegadetector)
             cantidad_proba = (cant_pred == 1) * mean_confidence + (1 - (cant_pred == 1)) * (1 - mean_confidence)
             cantidad = int(cant_pred == 1) if cant_pred is not None else None
-            validar = ((animal_proba >= (confianzaAnimalInf)) & (animal_proba <= confianzaAnimalSup) | (guanaco_proba <= (confianzaGuanaco))) | (cantidad_proba <= (confianzaCantidad))
+            validar = ((animal_proba >= (confianzaAnimalInf)) & (animal_proba <= confianzaAnimalSup) | (guanaco_proba <= (confianzaGuanaco))) | (cantidad == 0) | (cantidad_proba <= (confianzaCantidad))
 
         return full_path, animal_proba, animal, guanaco_proba, guanaco, especie, cantidad_proba, cantidad, validar, 0
 
@@ -163,7 +163,7 @@ def process_images():
     global current, total_imagenes
 
     modelPresencia = load_model('ModelosAI/ModelosFinales/modeloAnimalVGG16.h5')
-    modelGuanaco = load_model('ModelosAI/ModelosFinales/modeloGuanacoVGG16.h5')
+    modelGuanaco = load_model('ModelosAI/ModelosFinales/modeloGuanacoRN50.h5')
     modelMegadetector = YOLOV5Base(weights='ModelosAI/ModelosFinales/modeloMegadetector.pt', device='cpu')
 
     confianzaAnimalInf = 0.01
@@ -269,7 +269,7 @@ def process_images():
     filename = "procesado_"+str(hoy)+".csv"
 
     df.to_csv("Piloto2023/data/"+filename)
-    
+
     # At the end of your script where you want to stop the timer and show the message
     elapsed_time_str = stop_timer()  # This will stop the timer and return the elapsed time
     # Programar la llamada a show_final_message en el hilo principal
