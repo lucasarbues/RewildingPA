@@ -33,10 +33,10 @@ descargar_si_no_existe('120erB1Ffo7TuRzC0ZcQmi8mgJoZt-CEA', 'ModelosAI/ArchivosU
 # descargar_si_no_existe('133y0GQzsUu0f5J3TzeCPLNadtC5lly71', 'ModelosAI/ArchivosUtiles/testingEspecie.pkl')
 
 ### ModelosFinales
-descargar_si_no_existe('13CiNIHUHP4NkA4ZczrnUG5PSQ4OkfeWD', 'ModelosAI/ModelosFinales/modeloAnimalVGG16.h5')
-descargar_si_no_existe('13HcriUZNyB5tzTmA8bA7oALwMZR8KNkP', 'ModelosAI/ModelosFinales/modeloGuanacoVGG16.h5')
+descargar_si_no_existe('1juJkifnzEC1DnSyhggA1Q4dU-RX-qx5o', 'ModelosAI/ModelosFinales/modeloAnimalVGG16.h5')
+# descargar_si_no_existe('13HcriUZNyB5tzTmA8bA7oALwMZR8KNkP', 'ModelosAI/ModelosFinales/modeloGuanacoVGG16.h5')
 # descargar_si_no_existe('139fxcJeYVwbVIYX0fL6qjcbB6dKu6Q_a', 'ModelosAI/ModelosFinales/modeloAnimalIV3.h5')
 # descargar_si_no_existe('13CqX7oCyp3lX6Mk-lwMq1c8s5iQCd089', 'ModelosAI/ModelosFinales/modeloGuanacoIV3.h5')
 # descargar_si_no_existe('13CGuPUT0PMY7dIrGdGCVDfhSmwZj3CNY', 'ModelosAI/ModelosFinales/modeloAnimalRN50.h5')
-# descargar_si_no_existe('13Gkkwq8g66L8A4efAaiGRM1FYNlaNIAm', 'ModelosAI/ModelosFinales/modeloGuanacoRN50.h5')
+descargar_si_no_existe('1vQvGHsDaaHTrmFlJBLLN-s5Z72TdjIEJ', 'ModelosAI/ModelosFinales/modeloGuanacoRN50.h5')
 descargar_si_no_existe('1RXYv-416CqXs56tR5K9LLvk0d-eP837Z', 'ModelosAI/ModelosFinales/modeloMegadetector.pt')
