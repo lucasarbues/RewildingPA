@@ -194,7 +194,7 @@ def process_images():
     update_progress_bar()
 
     # Número de procesos o subprocesos concurrentes que deseas ejecutar
-    num_procesos_concurrentes = os.cpu_count()  # Puedes ajustar este valor
+    num_procesos_concurrentes = os.cpu_count() - 3  # Puedes ajustar este valor
 
     # Cambio en la lógica de ejecución para almacenar resultados en una lista
     resultados = []
@@ -211,7 +211,7 @@ def process_images():
             update_progress_bar()
 
             # Cada 1000 imágenes, guarda el DataFrame
-            if len(resultados) > 10000:
+            if len(resultados) > 1000:
 
                 df_temporal = pd.DataFrame(resultados, columns=['Ruta','Animal_proba','Animal','Guanaco_proba','Guanaco','Especie','Cantidad_proba','Cantidad','Validar','Validado'])
                 # Realiza la fusión
