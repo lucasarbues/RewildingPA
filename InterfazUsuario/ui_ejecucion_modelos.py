@@ -233,7 +233,7 @@ def process_images():
             update_progress_bar()
 
             # Cada 1000 imágenes, guarda el DataFrame
-            if len(resultados) > 10000:
+            if len(resultados) > 1000:
                 df_temporal = pd.DataFrame(resultados, columns=['Ruta', 'Sitio', 'Año', 'Camara', 'Extra', 'Archivo','Fecha','Hora','Animal_proba','Animal','Guanaco_proba','Guanaco','Especie','Cantidad_proba','Cantidad','Validar','Validado'])
                 df = pd.concat([df, df_temporal], ignore_index=True)
                 df.to_feather('InterfazUsuario/ArchivosUtiles/df.feather')
