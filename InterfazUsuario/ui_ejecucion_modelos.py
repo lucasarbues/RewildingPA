@@ -1,16 +1,11 @@
 import os
-
-# Suprimir advertencias de Intel MKL y NNPACK
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
-os.environ['MKL_THREADING_LAYER'] = 'GNU'
-
 import pandas as pd
 import tkinter as tk
 from tkinter import filedialog, simpledialog, messagebox, messagebox, ttk
 from tkinter.font import Font
-from tensorflow.keras.models import load_model
 import tensorflow as tf
 tf.config.set_visible_devices([], 'GPU')
+from tensorflow.keras.models import load_model
 from datetime import datetime
 from PIL import Image, ImageTk
 import sys
@@ -25,8 +20,16 @@ import logging
 import threading
 
 # Configuración del logging
-logging.basicConfig(filename='InterfazUsuario/log_warnings.log', level=logging.ERROR, format='%(asctime)s %(levelname)s:%(message)s')
+logging.basicConfig(filename='Piloto2023/log_warnings.log', level=logging.ERROR, format='%(asctime)s %(levelname)s:%(message)s')
 logger = logging.getLogger(__name__)
+
+# Suprimir advertencias de Intel MKL, NNPACK y TensorFlow
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+os.environ['MKL_THREADING_LAYER'] = 'GNU'
+tf.get_logger().setLevel('ERROR')
+
+import warnings
+warnings.filterwarnings('ignore', category=UserWarning)
 
 # Agrega la carpeta padre al sys.path
 current_directory = os.path.dirname(__file__)
@@ -216,7 +219,7 @@ def process_images():
     update_progress_bar()
 
     # Número de procesos o subprocesos concurrentes que deseas ejecutar
-    num_procesos_concurrentes = os.cpu_count()  # Puedes ajustar este valor
+    num_procesos_concurrentes = os.cpu_count() - 1  # Puedes ajustar este valor
 
     # Cambio en la lógica de ejecución para almacenar resultados en una lista
     resultados = []
