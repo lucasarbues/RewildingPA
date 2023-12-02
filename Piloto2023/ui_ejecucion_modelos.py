@@ -223,7 +223,6 @@ def process_images():
 
                 # Elimina las columnas temporales de actualización
                 df.drop(columns=[col for col in df if col.endswith('_update')], inplace=True)
-                # df.to_pickle('InterfazUsuario/ArchivosUtiles/df.pkl')
                 df.to_feather('Piloto2023/ArchivosUtiles/df.feather')
                 resultados = []
 
