@@ -25,6 +25,14 @@ La solución propuesta en este proyecto es la adopción de una tecnología basad
 
 Este repositorio requiere Python 3.9.6. Se recomienda usar `conda` para crear entornos virtuales y gestionar las versiones de Python y paquetes.
 
+### Clonar el Repositorio
+
+```bash
+git clone https://github.com/tu_usuario/RewildingAI-ImageAnalysis.git
+cd RewildingAI-ImageAnalysis
+pip install -r requirements.txt
+```
+
 ### Instalación de Conda
 
 Si aún no tienes Conda instalado, puedes descargar e instalar Anaconda o Miniconda desde sus respectivos sitios web. Anaconda incluye un conjunto de paquetes científicos por defecto, mientras que Miniconda es una versión más liviana que te permite instalar paquetes según sea necesario.
@@ -34,43 +42,32 @@ Si aún no tienes Conda instalado, puedes descargar e instalar Anaconda o Minico
 1. **Crear el Entorno**:
    - Abre tu terminal o Anaconda Prompt y ejecuta:
      ```
-     conda create --name ENV python=3.9.6
+     conda create --name <name> python=3.9.6
      ```
-     Esto crea un nuevo entorno llamado `ENV` con Python 3.9.6.
+     Esto crea un nuevo entorno llamado <name> con Python 3.9.6.
 
 2. **Activar el Entorno**:
    - Activa el entorno con:
      ```
-     conda activate ENV
+     conda activate <name>
      ```
 
 ### Instalación de Paquetes con Conda
 
-1. **Instalar Paquetes Específicos para TensorFlow**:
-   - Dentro del entorno activado, instala TensorFlow y dependencias relacionadas utilizando Conda:
+1. **Instalar Paquetes Específicos**:
+   - Dentro del entorno activado, instala TensorFlow, PyTorch y dependencias relacionadas utilizando Conda:
      ```
-     conda install tensorflow tensorflow-estimator=2.15.0 tensorflow-io-gcs-filesystem=0.34.0 tensorflow-macos=2.15.0
+     conda install tensorflow
      ```
-
-2. **Instalar Otras Dependencias desde `requirements.txt`**:
-   - Asegúrate de que `pip` esté actualizado:
      ```
-     pip install --upgrade pip
+     pip install pytorchWildlife
      ```
-   - Instala cualquier otro paquete necesario desde `requirements.txt`:
      ```
-     pip install -r requirements.txt
+     pip install charset_normalizer
      ```
-     Nota: Asegúrate de que `requirements.txt` no incluya paquetes ya instalados con Conda para evitar conflictos.
-
-### Uso del Entorno
-
-- Para activar el entorno `ENV`, usa:
-  - En Linux/macOS: `conda activate ENV`
-  - En Windows: `activate ENV`
-
-- Para desactivar el entorno, usa `conda deactivate`.
-
+     ```
+     pip install pyarrow
+     ```
 
 ## Metodología
 
@@ -98,17 +95,7 @@ Se eligió Python como lenguaje de programación debido a su vasta comunidad, li
 
 - **ResNet**: Introduce las "conexiones residuales" que facilitan el entrenamiento de redes más profundas, siendo una elección óptima para tareas que demandan una profundidad significativa.
 
-Estas arquitecturas se han adaptado utilizando una estrategia de **transferencia de aprendizaje** basada en modelos entrenados en el dataset ImageNet. 
-
-
-## Instalación
-Pasos y requerimientos para instalar el proyecto:
-
-```bash
-git clone https://github.com/tu_usuario/RewildingAI-ImageAnalysis.git
-cd RewildingAI-ImageAnalysis
-pip install -r requirements.txt
-```
+Estas arquitecturas se han adaptado utilizando una estrategia de **transferencia de aprendizaje** basada en modelos entrenados en el dataset ImageNet.
 
 ## Licencia
 Este proyecto se encuentra bajo la licencia MIT. Consulta el archivo [LICENSE](https://opensource.org/licenses/MIT) para obtener más detalles.
