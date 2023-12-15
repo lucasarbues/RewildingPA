@@ -277,9 +277,21 @@ def process_images():
 
     df.to_csv("InterfazUsuario/data/"+filename)
 
+   # Ruta al directorio donde quieres guardar el archivo, por ejemplo, en el escritorio
+    desktop_path = os.path.join(os.path.expanduser("~"), "Desktop")
+    directory = os.path.join(desktop_path, "data")
+
+    # Verifica si el directorio existe, y si no, lo crea
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+    # Ahora, puedes guardar tu archivo en este directorio
+    file_path = os.path.join(directory, filename)
+    df.to_csv(file_path, index=False)
+
     # At the end of your script where you want to stop the timer and show the message
     elapsed_time_str = stop_timer()  # This will stop the timer and return the elapsed time
-    
+
     # Programar la llamada a show_final_message en el hilo principal
     root.after_idle(show_final_message, filename, elapsed_time_str)
 
