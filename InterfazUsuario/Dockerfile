@@ -5,8 +5,11 @@ FROM python:3.9
 WORKDIR /app
 
 # Copiar el archivo de requisitos y instalar las dependencias
-COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install tensorflow
+RUN pip install pytorchwildlife
+RUN pip install charset_normalizer
+RUN pip install pyarrow
+
 
 # Copiar los archivos necesarios al contenedor
 COPY ModelosFinales/modeloMegadetector.pt ./ModelosFinales/
