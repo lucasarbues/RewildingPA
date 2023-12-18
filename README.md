@@ -9,17 +9,41 @@ Este proyecto forma parte de la tesis universitaria para la carrera de Data Scie
 - [Lucas Arbues](https://github.com/lucasarbues)
 - [Ignacio De Achaval](https://github.com/IgnacioAchaval)
 
-## Índice
-1. [Introducción](#introducción)
-2. [Metodología](#metodología)
-3. [Instalación](#instalación)
-4. [Licencia](#licencia)
-5. [Agradecimientos](#agradecimientos)
-
 ## Introducción
 La Fundación Rewilding Argentina desempeña un papel esencial en la conservación y restauración de la biodiversidad de los ecosistemas argentinos. No obstante, al emplear cámaras trampa para determinar la abundancia de especies, se enfrenta a significativas limitaciones. Pese a la importancia de estas técnicas, el análisis manual de las vastas cantidades de imágenes no solo resulta arduo, sino que también está expuesto a inconsistencias y errores humanos, exacerbados por la proporción de imágenes que podrían no contener registros faunísticos.
 
 La solución propuesta en este proyecto es la adopción de una tecnología basada en Inteligencia Artificial para el procesamiento y clasificación automatizada de dichas imágenes. Esta innovación no solo mejora la precisión del análisis, sino que también optimiza la eficiencia del proceso, permitiendo a la fundación fundamentar sus estrategias de conservación y restauración en datos más robustos y confiables.
+
+## Overview del Proyecto
+La Fundación Rewilding Argentina enfrenta desafíos críticos en la conservación de la biodiversidad, en un contexto donde un informe de la ONU (2020) alerta sobre una inminente sexta extinción masiva. La fundación, enfocada en restaurar ecosistemas y reintroducir especies nativas, opera en varias regiones (Chubut, Corrientes, Chaco, y Santa Cruz) implementando acciones como translocaciones de especies, manejo de pastizales, enriquecimiento de bosques, y control de especies exóticas.
+
+Un método clave para evaluar la efectividad de estas acciones es el monitoreo de la vida silvestre, tradicionalmente realizado mediante transectas. Sin embargo, esta técnica tiene limitaciones, ya que gran parte de la fauna permanece oculta. Las cámaras trampa emergen como una solución tecnológica para observar indirectamente la fauna, pero generan un volumen masivo de datos. Anualmente, se capturan hasta 120,000 imágenes por zona, de las cuales un 70% podrían no contener fauna relevante, y el proceso manual de clasificación es lento y propenso a errores.
+
+Para abordar este desafío, el proyecto propone la integración de inteligencia artificial buscando optimizar la clasificación y análisis de las imágenes capturadas. Esto acelera el proceso y mejora la precisión en la identificación de especies. Esta mejora en la recopilación de datos permitirá a los conservacionistas y formuladores de políticas tomar decisiones más informadas y efectivas, esenciales para la conservación y restauración de ecosistemas y la prevención de la extinción de especies.
+
+El resultado ha sido una solución semi-automatizada que no solo mejora significativamente el proceso de clasificación de imágenes sino que también demuestra cómo la sinergia entre la inteligencia artificial y la intervención humana puede ser un catalizador potente para proyectos de conservación de la biodiversidad.
+
+## Outputs del Proyecto
+La adopción del proyecto proporcionará al cliente una interfaz visual intuitiva para la ejecución y validación de modelos de clasificación de imágenes, lo que facilita significativamente el proceso de monitoreo y análisis de datos. Esta interfaz permitiría a los usuarios interactuar de manera eficiente con el modelo, lo que agiliza la toma de decisiones basada en los datos obtenidos. Además, el proyecto incluye una base de datos robusta y organizada que asegura la consistencia en la clasificación de imágenes. Esto no solo optimiza la recuperación y el manejo de la información sino que también garantiza la integridad y la trazabilidad de los datos a lo largo del tiempo, lo que resulta crucial para estudios de estimación de poblaciones y para la verificación de la calidad de los datos en investigaciones de conservación y ecología.
+
+- Modelos Predictivos:
+  - Presencia de Animal
+  - Especies
+  - Cantidades
+- Interfaces de Usuario:
+  - Inferfaz de Modelos
+  - Interfaz de Validacion
+ 
+## Resultados de Proyectos
+La adopción del proyecto proporcionará al cliente una interfaz visual intuitiva para la ejecución y validación de modelos de clasificación de imágenes, lo que facilita significativamente el proceso de monitoreo y análisis de datos. Esta interfaz permitiría a los usuarios interactuar de manera eficiente con el modelo, ajustar parámetros y validar los resultados de forma inmediata, lo que agiliza la toma de decisiones basada en los datos obtenidos. Además, el proyecto incluye una base de datos robusta y organizada que asegura la consistencia en la clasificación de imágenes. Esto no solo optimiza la recuperación y el manejo de la información sino que también garantiza la integridad y la trazabilidad de los datos a lo largo del tiempo, lo que resulta crucial para estudios de estimación de poblaciones y para la verificación de la calidad de los datos en investigaciones de conservación y ecología.
+
+La implementación de la solución propuesta ha generado mejoras significativas en los indicadores relevantes para el proceso de clasificación automática de imágenes de animales capturadas por cámaras trampa. Se ha logrado una reducción del tiempo necesario para completar las jornadas totales en un 86.39%. En cuanto a la cantidad de imágenes procesadas por hora, se ha incrementado en un notable 638.1%.
+La precisión del etiquetado, un aspecto crítico para la calidad del análisis de datos, se ha incrementado en un 38.7%. Este avance es fundamental para la precisión de estudios de biodiversidad y para el seguimiento de la fauna.
+Desde una perspectiva económica, el costo total del proceso se ha reducido en un 41.17%. Finalmente, el ratio de imágenes utilizables se ha incrementado al darle valor a la totalidad de la información que se recolecta.
+
+El análisis en este proyecto destacó la importancia de estandarizar las columnas categóricas para eliminar duplicados causados por pequeñas variaciones textuales, crucial para garantizar la coherencia y precisión de los datos, lo que mejoró los análisis subsecuentes. Se enfrentó al desafío de precisar las rutas de imágenes en la base de datos. Inicialmente, solo un 14.7% de las imágenes coincidían con las rutas generadas, debido a la variabilidad en la nomenclatura y almacenamiento de archivos. Tras un minucioso proceso, se logró una corrección del 99.4% de los datos. La estandarización y corrección de las rutas de los archivos en la base de datos se traduce en una mejora significativa para el proyecto, asegurando la consistencia y precisión en el manejo de la información y minimizando errores potenciales, vital en proyectos de gran escala y complejidad.
+
+Estas mejoras no solo reflejan la eficacia de la solución propuesta, sino que también ponen de manifiesto la importancia de adoptar tecnologías avanzadas y metodologías optimizadas en la investigación y conservación de la vida silvestre. La capacidad para procesar y etiquetar eficientemente grandes volúmenes de imágenes abre nuevas posibilidades para el monitoreo ambiental y la toma de decisiones basada en datos en tiempo real, contribuyendo significativamente al campo de la ciencia de datos aplicada a la ecología y conservación.
 
 ## Instrucciones de Instalación
 
@@ -96,6 +120,40 @@ Se eligió Python como lenguaje de programación debido a su vasta comunidad, li
 - **ResNet**: Introduce las "conexiones residuales" que facilitan el entrenamiento de redes más profundas, siendo una elección óptima para tareas que demandan una profundidad significativa.
 
 Estas arquitecturas se han adaptado utilizando una estrategia de **transferencia de aprendizaje** basada en modelos entrenados en el dataset ImageNet.
+
+## Instrucciones de Ejecucion de Interfaces:
+### Interfaz de Ejecución de Modelos:
+Se activa el entorno de ejecución.
+
+```
+conda activate <name>
+```
+
+Se descargan los archivos necesarios mediante el archivo **DescargaArchivos.py**.
+
+```
+python ModelosAI/DescargaArchivos.py
+```
+
+Se ejecuta la interfaz de ejecucion de modelos.
+
+```
+python InterfazUsuario/ui_ejecucion_modelos.py
+```
+
+### Interfaz de Validación:
+Se activa el entorno de ejecución.
+
+```
+conda activate <name>
+```
+
+Se ejecuta la interfaz de validacion.
+
+```
+python InterfazUsuario/ui_validacion.py
+```
+
 
 ## Licencia
 Este proyecto se encuentra bajo la licencia MIT. Consulta el archivo [LICENSE](https://opensource.org/licenses/MIT) para obtener más detalles.
