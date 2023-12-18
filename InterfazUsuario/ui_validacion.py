@@ -70,7 +70,14 @@ class ValidacionImagenes:
         # Crear el combobox y configurarlo
         self.combobox_especies = ttk.Combobox(self.frame_derecho, textvariable=self.especies_var, values=self.especies)
         self.combobox_especies.grid(row=5, column=0, sticky="ew")
-        self.combobox_especies.bind('<KeyRelease>', self.filtrar_especies)
+
+        # Configurar temporizador para filtrado
+        self.temporizador_filtrado = None
+        self.tiempo_espera_filtrado = 300  
+
+        self.combobox_especies.bind('<Key>', self.iniciar_temporizador_filtrado)
+        self.combobox_especies.bind('<<ComboboxSelected>>', self.on_especie_selected)
+        
 
         self.label_cantidad = ttk.Label(self.frame_derecho, text="Cantidad:", anchor="w")
         self.label_cantidad.grid(row=7, column=0, sticky="ew")
@@ -79,7 +86,7 @@ class ValidacionImagenes:
         self.entry_cantidad = ttk.Entry(self.frame_derecho, validate="key", validatecommand=(self.validate_cantidad, '%P'))
         self.entry_cantidad.grid(row=8, column=0, sticky="ew")
 
-        self.button_validar = ttk.Button(self.frame_derecho, text="Siguiente", command=self.validar, style='TButton')  
+        self.button_validar = ttk.Button(self.frame_derecho, text="Siguiente", command=self.validar, style='TButton')
         self.button_validar.grid(row=9, column=0, sticky="ew")
 
         self.label_restantes = ttk.Label(self.frame_derecho, text="Imágenes restantes por validar: 0", anchor="w")
@@ -88,25 +95,13 @@ class ValidacionImagenes:
         self.label_finalizado = ttk.Label(self.frame_derecho, text="", style="Green.TLabel", anchor="w")
         self.label_finalizado.grid(row=11, column=0, sticky="ew")
 
-
         self.index = 0
         self.df = None
         self.ruta_csv = None
         self.ordenar_por_camara_fecha_hora = False
 
-        # Agrega un enlace entre la tecla Enter y la función self.validar()
-        self.root.bind('<Return>', self.validar)
-
         self.button_guardar_cerrar = ttk.Button(self.frame_derecho, text="Guardar y Cerrar", command=self.guardar_y_cerrar, style='TButton')
         self.button_guardar_cerrar.grid(row=12, column=0, sticky="ew")
-
-
-        self.espacio_blanco4 = ttk.Label(self.frame_derecho)
-        self.espacio_blanco4.grid(row=15,column=0, sticky="ew")
-
-        self.espacio_blanco5 = ttk.Label(self.frame_derecho)
-        self.espacio_blanco5.grid(row=16,column=0, sticky="ew")
-
 
         imagen_logo = Image.open("InterfazUsuario/ArchivosUtiles/logo_rewilding.png")
         imagen_logo = imagen_logo.resize((180, 60))
@@ -116,16 +111,6 @@ class ValidacionImagenes:
         self.label_logo.image = imagen_logo
         self.label_logo.grid(row=17,column=0, sticky="ew")
 
-        self.espacio_blanco = ttk.Label(self.frame_derecho)
-        self.espacio_blanco.grid(row=18,column=0, sticky="ew")
-
-
-        self.espacio_blanco2 = ttk.Label(self.frame_derecho)
-        self.espacio_blanco2.grid(row=22,column=0, sticky="ew")
-
-        self.espacio_blanco3 = ttk.Label(self.frame_derecho)
-        self.espacio_blanco3.grid(row=24,column=0, sticky="ew")
-
 
     def cargar_csv(self):
         self.ruta_csv = filedialog.askopenfilename(filetypes=[("CSV files", "*.csv")])
@@ -133,9 +118,11 @@ class ValidacionImagenes:
             self.df = pd.read_csv(self.ruta_csv)
             # Ordenar el DataFrame por cámara, fecha y hora
             if 'Camara' in self.df.columns and 'Fecha' in self.df.columns and 'Hora' in self.df.columns:
-                self.df.sort_values(by=['Camara', 'Fecha', 'Hora'], inplace=True)
+                # Asumimos que el formato de la fecha es día/mes/año y hora es en formato 24 horas.
+                self.df['Fecha_Hora'] = pd.to_datetime(self.df['Fecha'] + ' ' + self.df['Hora'], dayfirst=True, format='%d/%m/%Y %H:%M:%S')
+                self.df.sort_values(by=['Camara', 'Fecha_Hora'], inplace=True)
                 self.ordenar_por_camara_fecha_hora = True
-            #aca
+
             if 'Burst' not in self.df.columns:
                 self.df['Fecha_Hora'] = pd.to_datetime(self.df['Fecha'] + ' ' + self.df['Hora'])
                 self.df = self.df.sort_values(by=['Camara', 'Fecha_Hora'])
@@ -145,30 +132,46 @@ class ValidacionImagenes:
                 # Elimina la columna auxiliar 'Dif_Tiempo'
                 self.df = self.df.drop(columns=['Dif_Tiempo'])
 
+            self.combobox_especies.focus_set()
             self.mostrar_imagen()
 
-    def filtrar_especies(self, event):
+    def iniciar_temporizador_filtrado(self, event):
+        # Reiniciar el temporizador si ya está en funcionamiento
+        if self.temporizador_filtrado:
+            self.root.after_cancel(self.temporizador_filtrado)
+        
+        # Iniciar el temporizador para ejecutar la función de filtrado después de un tiempo de espera
+        self.temporizador_filtrado = self.root.after(self.tiempo_espera_filtrado, self.filtrar_especies)
+
+
+    def filtrar_especies(self, event = None):
         # Obtén el texto actual del combobox
         texto = self.combobox_especies.get()
-        
-        # Evita actualizar si la tecla presionada es una tecla especial como las flechas
-        if event.keysym in ('Up', 'Down', 'Left', 'Right', 'Return', 'Tab'):
-            return
-        
+
         # Filtra las especies que coinciden con el texto introducido
-        if texto == '':
-            # Si no hay texto, muestra todas las especies
-            self.combobox_especies['values'] = self.especies
-        else:
+        if texto:
             # De lo contrario, filtra las especies que contengan el texto introducido
             especies_filtradas = [especie for especie in self.especies if texto.lower() in especie.lower()]
             self.combobox_especies['values'] = especies_filtradas
-        
+            if not self.combobox_especies['values']:
+                # Si no hay coincidencias, no muestra la lista desplegable
+                self.combobox_especies.event_generate('<<ComboboxClosed>>')
+            elif not self.combobox_especies['values'] == especies_filtradas:
+                # Si las coincidencias han cambiado, actualiza la lista y muestra la primera coincidencia
+                self.combobox_especies.set(texto)
+                self.combobox_especies.event_generate('<Down>')
+        else:
+            # Si no hay texto, muestra todas las especies
+            self.combobox_especies['values'] = self.especies
+
         # Coloca el texto del usuario de nuevo porque el filtrado lo elimina
         self.combobox_especies.set(texto)
         # Mueve el cursor al final del texto
         self.combobox_especies.icursor(len(texto))
 
+    def on_especie_selected(self, event=None):
+        # Mueve el enfoque al campo de entrada de cantidad
+        self.entry_cantidad.focus_set()
 
     def guardar_csv(self):
         if self.ruta_csv is not None:
@@ -192,63 +195,94 @@ class ValidacionImagenes:
 
     def mostrar_imagen(self):
         if self.df is not None and not self.df.empty:
-            # Limpiar imágenes y checkboxes anteriores
+            # Clear previous images and checkboxes
             for widget in self.frame_izquierdo.winfo_children():
                 widget.destroy()
 
+            # Reset grid configuration
+            self.frame_izquierdo.grid_propagate(False)
+            for i in range(20):
+                self.frame_izquierdo.grid_rowconfigure(i, weight=0)
+                self.frame_izquierdo.grid_columnconfigure(i, weight=0)
+
+            # Update the frame to reflect the changes
+            self.frame_izquierdo.update_idletasks()
+
             checkboxes = []
 
-            # Obtener las imágenes por validar
-            #images_to_validate = self.df[(self.df['Validado'] == 0) & self.df['Validar']].index.tolist()
+            # Get the images to validate
             images_to_validate = self.df[(self.df['Validado'] == 0) & self.df['Validar']]
             min_burst = images_to_validate['Burst'].min()
-            images_to_validate = images_to_validate[images_to_validate['Burst']==min_burst]
-            images_to_validate = images_to_validate.index.tolist()
-            #aca
-            ##images_to_validate tiene que ser la lista de índices
+            images_to_validate = images_to_validate[images_to_validate['Burst'] == min_burst].index.tolist()
+            cantImagenes = min(12, len(images_to_validate))
 
-            # Mostrar hasta 12 imágenes por validar en cada iteración
-            for i in range(min(12, len(images_to_validate))):
+            # Determine the number of columns based on the number of images
+            num_columns = max(1, min((cantImagenes + 2) // 3, 4))
+            num_rows = max(1, (cantImagenes + num_columns - 1) // num_columns)
+
+            # Calculate the available size for each image
+            self.frame_izquierdo.update_idletasks()
+            frame_width = self.frame_izquierdo.winfo_width()
+            frame_height = self.frame_izquierdo.winfo_height()
+
+            img_width = frame_width // num_columns
+            img_height = frame_height // num_rows
+
+            # Display the images for validation
+            for i in range(cantImagenes):
                 index = images_to_validate[i]
                 ruta_imagen = self.df.loc[index, "Ruta"]
                 imagen = Image.open(ruta_imagen)
-                imagen = imagen.resize((230, 210))  # Ajusta el tamaño según tus preferencias
-                imagen = ImageTk.PhotoImage(imagen)
 
-                # Crear un Frame para contener la imagen y el checkbox
-                frame_imagen = tk.Frame(self.frame_izquierdo, bg='black')
-                frame_imagen.grid(row=i // 4, column=(i % 4) * 2, sticky="nsew")
+                # Preserve aspect ratio
+                aspect_ratio = imagen.width / imagen.height
+                if imagen.width / img_width > imagen.height / img_height:
+                    new_width = img_width
+                    new_height = int(new_width / aspect_ratio)
+                else:
+                    new_height = img_height
+                    new_width = int(new_height * aspect_ratio)
 
-                # Agregar la imagen al Frame
-                label_imagen = tk.Label(frame_imagen, image=imagen)
-                label_imagen.image = imagen
-                label_imagen.grid(row=0, column=0, sticky="nsew")
+                imagen = imagen.resize((new_width, new_height), Image.LANCZOS)
+                imagen_tk = ImageTk.PhotoImage(imagen)
 
-                # Agregar el Checkbutton al Frame
-                checkbox_var = tk.BooleanVar()  # Variable para rastrear el estado del checkbox
-                checkbox = tk.Checkbutton(frame_imagen, text=f"", variable=checkbox_var, bg='black') # Imagen {index+1}
-                checkbox.grid(row=0, column=1, sticky="nw")
+                # Create a Frame to contain the image and checkbox with a green background
+                frame_imagen = tk.Frame(self.frame_izquierdo, bg='#122C12')
+                frame_imagen.grid(row=i // num_columns, column=i % num_columns, sticky="nsew")
+                frame_imagen.grid_propagate(False)
+
+                # Add the image to the Frame
+                label_imagen = tk.Label(frame_imagen, image=imagen_tk, bg='#122C12')
+                label_imagen.image = imagen_tk  # Keep a reference
+                label_imagen.pack(fill='both', expand=True)
+
+                # Add the Checkbox to the Frame
+                checkbox_var = tk.BooleanVar(value=True)  # Variable to track the checkbox state
+                checkbox = tk.Checkbutton(frame_imagen, variable=checkbox_var, bg='#122C12')
+                checkbox.pack(anchor='ne', side='top')
+
                 checkboxes.append((index, checkbox_var))
 
-            # Configurar el redimensionamiento de las filas y columnas en el frame_izquierdo
-            for i in range(3):
+            # Configure the resizing of the image frames
+            for i in range(num_rows):
                 self.frame_izquierdo.grid_rowconfigure(i, weight=1)
-                self.frame_izquierdo.grid_columnconfigure(i * 2, weight=1)
+            for i in range(num_columns):
+                self.frame_izquierdo.grid_columnconfigure(i, weight=1)
 
-            # Actualizar información asociada
+            # Update associated information
             if checkboxes:
-                # Avanzar al siguiente índice después de la última imagen mostrada
                 self.index = checkboxes[-1][0] + 1 if self.index in images_to_validate else images_to_validate[0]
 
             self.label_camara.config(text=f"{self.df.loc[self.index, 'Sitio']}")
             self.label_fecha.config(text=f"{self.df.loc[self.index, 'Fecha']}")
 
-            animales_por_validar = len(self.df[(self.df['Validado'] == 0) & self.df['Validar']])
-            self.label_restantes.config(text=f"Imágenes restantes: {animales_por_validar}")
+            remaining_images = len(self.df[(self.df['Validado'] == 0) & self.df['Validar']])
+            self.label_restantes.config(text=f"Remaining images to validate: {remaining_images}")
 
-            self.checkboxes = checkboxes  # Almacenar la lista de variables de checkbox
+            self.checkboxes = checkboxes
 
-    def validar(self, event=None):  
+
+    def validar(self, event=None):
         especie = self.especies_var.get()
         cantidad = self.entry_cantidad.get()
 
