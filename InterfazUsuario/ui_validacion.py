@@ -251,15 +251,15 @@ class ValidacionImagenes:
                 frame_imagen.grid(row=i // num_columns, column=i % num_columns, sticky="nsew")
                 frame_imagen.grid_propagate(False)
 
-                # Add the image to the Frame
+                # Agregar la imagen al Frame
                 label_imagen = tk.Label(frame_imagen, image=imagen_tk, bg='#122C12')
-                label_imagen.image = imagen_tk  # Keep a reference
+                label_imagen.image = imagen_tk  # Mantener una referencia
                 label_imagen.pack(fill='both', expand=True)
 
-                # Add the Checkbox to the Frame
-                checkbox_var = tk.BooleanVar(value=True)  # Variable to track the checkbox state
+                # Agregar el Checkbox debajo de la imagen
+                checkbox_var = tk.BooleanVar(value=True)  # Variable para rastrear el estado del checkbox
                 checkbox = tk.Checkbutton(frame_imagen, variable=checkbox_var, bg='#122C12')
-                checkbox.pack(anchor='ne', side='top')
+                checkbox.place(relx=0.9, rely=0, anchor='ne')
 
                 checkboxes.append((index, checkbox_var))
 
