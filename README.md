@@ -124,27 +124,35 @@ Estas arquitecturas se han adaptado utilizando una estrategia de **transferencia
 ## Instrucciones de Ejecucion de Interfaces:
 ### Interfaz de Ejecución de Modelos:
 Se activa el entorno de ejecución.
-      ```
-      conda activate <name>
-      ```
+
+```
+conda activate <name>
+```
+
 Se descargan los archivos necesarios mediante el archivo **DescargaArchivos.py**.
-      ```
-      python ModelosAI/DescargaArchivos.py
-      ```
+
+```
+python ModelosAI/DescargaArchivos.py
+```
+
 Se ejecuta la interfaz de ejecucion de modelos.
-      ```
-      python InterfazUsuario/ui_ejecucion_modelos.py
-      ```
+
+```
+python InterfazUsuario/ui_ejecucion_modelos.py
+```
 
 ### Interfaz de Validación:
 Se activa el entorno de ejecución.
-      ```
-      conda activate <name>
-      ```
+
+```
+conda activate <name>
+```
+
 Se ejecuta la interfaz de validacion.
-      ```
-      python InterfazUsuario/ui_validacion.py
-      ```
+
+```
+python InterfazUsuario/ui_validacion.py
+```
 
 
 ## Licencia
