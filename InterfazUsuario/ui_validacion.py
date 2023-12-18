@@ -10,6 +10,9 @@ class ValidacionImagenes:
         self.root = root
         self.root.title("Validación de Imágenes")
         self.root.configure(bg='white')
+        
+        self.historial = []
+        self.historial_cambios = []
 
         root.geometry("{0}x{1}+0+0".format(root.winfo_screenwidth(), root.winfo_screenheight()))
 
@@ -77,23 +80,31 @@ class ValidacionImagenes:
 
         self.combobox_especies.bind('<Key>', self.iniciar_temporizador_filtrado)
         self.combobox_especies.bind('<<ComboboxSelected>>', self.on_especie_selected)
-        
 
         self.label_cantidad = ttk.Label(self.frame_derecho, text="Cantidad:", anchor="w")
-        self.label_cantidad.grid(row=7, column=0, sticky="ew")
+        self.label_cantidad.grid(row=6, column=0, sticky="ew")
 
         self.validate_cantidad = root.register(self.validate_entry_cantidad)
         self.entry_cantidad = ttk.Entry(self.frame_derecho, validate="key", validatecommand=(self.validate_cantidad, '%P'))
-        self.entry_cantidad.grid(row=8, column=0, sticky="ew")
+        self.entry_cantidad.grid(row=7, column=0, sticky="ew")
+
+        # Añade un botón para agregar más especies
+        self.button_agregar_especie = ttk.Button(self.frame_derecho, text="Agregar Otra Especie", command=self.agregar_especie, style='TButton')
+        self.button_agregar_especie.grid(row=10, column=0, sticky="ew")
 
         self.button_validar = ttk.Button(self.frame_derecho, text="Siguiente", command=self.validar, style='TButton')
-        self.button_validar.grid(row=9, column=0, sticky="ew")
+        self.button_validar.grid(row=12, column=0, sticky="ew")
 
         self.label_restantes = ttk.Label(self.frame_derecho, text="Imágenes restantes por validar: 0", anchor="w")
-        self.label_restantes.grid(row=10, column=0, sticky="ew")
+        self.label_restantes.grid(row=13, column=0, sticky="ew")
 
         self.label_finalizado = ttk.Label(self.frame_derecho, text="", style="Green.TLabel", anchor="w")
-        self.label_finalizado.grid(row=11, column=0, sticky="ew")
+        self.label_finalizado.grid(row=14, column=0, sticky="ew")
+
+        # Asegúrate de agregar un botón o una opción para que el usuario pueda deshacer
+        self.button_deshacer = ttk.Button(self.frame_derecho, text="Deshacer Cambio", command=self.deshacer_cambio, style='TButton')
+        self.button_deshacer.grid(row=15, column=0, sticky="ew")  # Ajusta la fila según sea necesario
+
 
         self.index = 0
         self.df = None
@@ -101,7 +112,7 @@ class ValidacionImagenes:
         self.ordenar_por_camara_fecha_hora = False
 
         self.button_guardar_cerrar = ttk.Button(self.frame_derecho, text="Guardar y Cerrar", command=self.guardar_y_cerrar, style='TButton')
-        self.button_guardar_cerrar.grid(row=12, column=0, sticky="ew")
+        self.button_guardar_cerrar.grid(row=16, column=0, sticky="ew")
 
         imagen_logo = Image.open("InterfazUsuario/ArchivosUtiles/logo_rewilding.png")
         imagen_logo = imagen_logo.resize((180, 60))
@@ -118,8 +129,7 @@ class ValidacionImagenes:
             self.df = pd.read_csv(self.ruta_csv)
             # Ordenar el DataFrame por cámara, fecha y hora
             if 'Camara' in self.df.columns and 'Fecha' in self.df.columns and 'Hora' in self.df.columns:
-                # Asumimos que el formato de la fecha es día/mes/año y hora es en formato 24 horas.
-                self.df['Fecha_Hora'] = pd.to_datetime(self.df['Fecha'] + ' ' + self.df['Hora'], dayfirst=True, format='%d/%m/%Y %H:%M:%S')
+                self.df['Fecha_Hora'] = pd.to_datetime(self.df['Fecha'] + ' ' + self.df['Hora'], format='mixed')
                 self.df.sort_values(by=['Camara', 'Fecha_Hora'], inplace=True)
                 self.ordenar_por_camara_fecha_hora = True
 
@@ -172,6 +182,49 @@ class ValidacionImagenes:
     def on_especie_selected(self, event=None):
         # Mueve el enfoque al campo de entrada de cantidad
         self.entry_cantidad.focus_set()
+
+    def agregar_especie(self):
+        # Obtiene los datos de la nueva especie y cantidad de las entradas
+        nueva_especie = self.especies_var.get()
+        nueva_cantidad = self.entry_cantidad.get()
+        
+        # Si no se han seleccionado checkboxes, no hagas nada
+        if not any(checkbox_var.get() for index, checkbox_var in self.checkboxes):
+            return
+        
+        # Prepara una lista para guardar los índices y las filas originales
+        indices_a_guardar = []
+        filas_a_guardar = []
+
+        # Itera sobre las checkboxes seleccionadas
+        for index, checkbox_var in self.checkboxes:
+            if checkbox_var.get():
+                # Guarda el estado actual de la fila
+                fila_actual = self.df.loc[index].copy()
+                filas_a_guardar.append(fila_actual)
+                
+                # Actualiza la fila con la nueva especie y cantidad
+                nueva_fila = fila_actual.copy()
+                nueva_fila['Especie'] = nueva_especie
+                nueva_fila['Cantidad'] = nueva_cantidad
+                nueva_fila['Validado'] = 1  # Marca la fila como validada
+
+                # Añade la fila actualizada al DataFrame
+                self.df = pd.concat([self.df, pd.DataFrame([nueva_fila])], ignore_index=True)
+                
+                # Guarda el índice de la nueva fila
+                indices_a_guardar.append(self.df.index[-1])
+
+        # Guarda el cambio en el historial antes de realizarlo
+        self.guardar_cambio(indices_a_guardar, filas_a_guardar)
+        
+        # Limpia las entradas para la siguiente especie
+        self.especies_var.set('')
+        self.entry_cantidad.delete(0, tk.END)
+        
+        # Actualiza el GUI para mostrar que se puede ingresar una nueva especie
+        self.combobox_especies.focus_set()
+
 
     def guardar_csv(self):
         if self.ruta_csv is not None:
@@ -277,37 +330,81 @@ class ValidacionImagenes:
             self.label_fecha.config(text=f"{self.df.loc[self.index, 'Fecha']}")
 
             remaining_images = len(self.df[(self.df['Validado'] == 0) & self.df['Validar']])
-            self.label_restantes.config(text=f"Remaining images to validate: {remaining_images}")
+            self.label_restantes.config(text=f"Imagenes Restantes: {remaining_images}")
 
             self.checkboxes = checkboxes
 
+    def guardar_cambio(self, indices, filas_originales):
+        # Asegúrate de que 'indices' y 'filas_originales' sean listas
+        if not isinstance(indices, list):
+            indices = [indices]
+        if not isinstance(filas_originales, list):
+            filas_originales = [filas_originales]
+        
+        # Guarda cada cambio en el historial
+        for index, fila_original in zip(indices, filas_originales):
+            self.historial.append((index, fila_original.copy()))
 
-    def validar(self, event=None):
-        especie = self.especies_var.get()
-        cantidad = self.entry_cantidad.get()
 
-        if self.df is not None and hasattr(self, 'checkboxes'):
-            for index, checkbox_var in self.checkboxes:
-                if checkbox_var.get():  # Verificar si el checkbox está marcado
-                    # Copiar la información de la imagen a df_validado
-                    #self.df_validado = self.df_validado.append(self.df.loc[index])
+    def deshacer_cambio(self):
+        if self.historial:
+            # Aquí asumes que todos los cambios en la última "rafaga" tienen el mismo 'Burst'
+            burst_id = self.df.loc[self.historial[-1][0], 'Burst']
+            cambios_a_deshacer = [cambio for cambio in self.historial if self.df.loc[cambio[0], 'Burst'] == burst_id]
 
-                    # Actualizar la información en df
-                    self.df.loc[index, "Especie"] = especie
-                    self.df.loc[index, "Cantidad"] = cantidad
-                    self.df.loc[index, "Validado"] = 1
+            for index, fila_original in cambios_a_deshacer:
+                self.df.loc[index] = fila_original
+                # Esto asume que 'self.historial' es una lista de tuplas (index, fila_original)
 
-            # Actualizar el conjunto de imágenes por validar después de la validación
-            #self.df = self.df[(self.df['Validado'] == 0) & self.df['Validar']]
-
-            # Mostrar las siguientes imágenes por validar
+            # Elimina los cambios deshechos del historial
+            self.historial = [cambio for cambio in self.historial if cambio not in cambios_a_deshacer]
             self.mostrar_imagen()
 
-            self.entry_cantidad.delete(0, tk.END)
-            self.guardar_csv()
 
-            # Guardar el DataFrame validado en un archivo CSV
-            #self.guardar_csv_validado()
+    def validar(self):
+        # Asigna la especie y cantidad a las imágenes seleccionadas
+        for index, checkbox_var in self.checkboxes:
+            if checkbox_var.get():
+                self.guardar_cambio(index, self.df.loc[index])
+                self.df.loc[index, "Especie"] = self.especies_var.get()
+                self.df.loc[index, "Cantidad"] = self.entry_cantidad.get()
+                self.df.loc[index, "Validado"] = 1
+
+        # Procesa las imágenes seleccionadas y duplica las filas si es necesario
+        self.procesar_seleccion()
+
+        # Limpia y prepara para la siguiente entrada
+        self.especies_var.set('')
+        self.entry_cantidad.delete(0, tk.END)
+        self.mostrar_imagen()
+        self.guardar_csv()
+
+    def procesar_seleccion(self):
+        # Aquí va la lógica para manejar la duplicación de filas en el DataFrame.
+        # Por ejemplo, podrías tener algo así:
+        filas_a_duplicar = []
+        for index, checkbox_var in self.checkboxes:
+            if checkbox_var.get():
+                fila_actual = self.df.loc[index].copy()
+                filas_a_duplicar.append(fila_actual)
+
+        for fila in filas_a_duplicar:
+            # Actualiza la fila con la nueva especie y cantidad antes de duplicar
+            nueva_fila = fila.copy()
+            nueva_fila['Especie'] = self.especies_var.get()
+            nueva_fila['Cantidad'] = self.entry_cantidad.get()
+            self.df = pd.concat([self.df, pd.DataFrame([nueva_fila])], ignore_index=True)
+
+        # Restablece los checkboxes seleccionados y las entradas
+        self.limpiar_entradas()
+
+    def limpiar_entradas(self):
+        # Limpia las entradas de especie y cantidad después de procesar
+        self.especies_var.set('')
+        self.entry_cantidad.delete(0, tk.END)
+        for index, checkbox_var in self.checkboxes:
+            checkbox_var.set(False)
+
 
 
 if __name__ == "__main__":
