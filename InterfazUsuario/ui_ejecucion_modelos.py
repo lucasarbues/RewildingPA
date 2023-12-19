@@ -273,7 +273,7 @@ def process_images():
 
     hoy  = datetime.now().date()
     filename = "procesado_"+str(hoy)+".csv"
-    
+
     # Ruta al directorio donde quieres guardar el archivo, por ejemplo, en el escritorio
     desktop_path = os.path.join(os.path.expanduser("~"), "Desktop")
     directory = os.path.join(desktop_path, "data")
